@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synapti-K AI — Architecture Diagram</title>
+<style>
+  :root {
+    --void: #05060A;
+    --ink: #0A0D17;
+    --panel: #0E1322;
+    --line: #1B2236;
+    --blue: #2D7CFF;
+    --violet: #7A3CF0;
+    --cyan: #36D6FF;
+    --green: #22C55E;
+    --amber: #F59E0B;
+    --red: #EF4444;
+    --text: #E9EDF8;
+    --muted: #8A93AB;
+    --dim: #586079;
+    --grad: linear-gradient(105deg,#36D6FF 0%,#2D7CFF 40%,#7A3CF0 100%);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--void);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 40px 24px 60px;
+  }
+  body::before {
+    content: "";
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(800px 600px at 80% -10%, rgba(45,124,255,.12), transparent 60%),
+      radial-gradient(700px 500px at 5% 5%, rgba(122,60,240,.1), transparent 60%);
+  }
+
+  .page { max-width: 1280px; margin: 0 auto; position: relative; z-index: 1; }
+
+  /* Header */
+  .header { text-align: center; margin-bottom: 56px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; letter-spacing: .18em; color: var(--cyan);
+    text-transform: uppercase; font-family: monospace;
+    border: 1px solid rgba(54,214,255,.25); padding: 5px 14px;
+    border-radius: 100px; background: rgba(54,214,255,.05); margin-bottom: 18px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan);
+    box-shadow: 0 0 10px var(--cyan); animation: pulse 1.8s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  h1 { font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight: 700; line-height: 1.1; }
+  h1 em { font-style: normal; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .subtitle { color: var(--muted); margin-top: 12px; font-size: .97rem; }
+
+  /* Diagram Layout */
+  .diagram { display: flex; flex-direction: column; gap: 0; }
+
+  /* Row: horizontal groups */
+  .row { display: flex; align-items: stretch; gap: 0; position: relative; }
+
+  /* Sections */
+  .section-label {
+    writing-mode: vertical-rl; text-orientation: mixed;
+    transform: rotate(180deg);
+    font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--dim); font-family: monospace;
+    padding: 0 10px;
+    display: flex; align-items: center; justify-content: center;
+    border-right: 1px solid var(--line);
+    min-width: 36px;
+    flex-shrink: 0;
+  }
+  .section-label.blue  { color: var(--blue);   border-color: rgba(45,124,255,.3); }
+  .section-label.cyan  { color: var(--cyan);   border-color: rgba(54,214,255,.3); }
+  .section-label.violet { color: var(--violet); border-color: rgba(122,60,240,.3); }
+  .section-label.green  { color: var(--green);  border-color: rgba(34,197,94,.3); }
+
+  /* Zone containers */
+  .zone {
+    flex: 1; border: 1px solid var(--line); border-radius: 16px;
+    padding: 24px 28px; margin: 8px;
+    background: linear-gradient(160deg, rgba(14,19,34,.7), rgba(10,13,23,.4));
+    position: relative;
+  }
+  .zone-title {
+    font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+    font-family: monospace; margin-bottom: 18px; display: flex; align-items: center; gap: 8px;
+  }
+  .zone-title.blue   { color: var(--blue); }
+  .zone-title.cyan   { color: var(--cyan); }
+  .zone-title.violet { color: var(--violet); }
+  .zone-title.green  { color: var(--green); }
+  .zone-title.amber  { color: var(--amber); }
+
+  /* Cards */
+  .cards { display: flex; flex-direction: column; gap: 10px; }
+  .cards.row-cards { flex-direction: row; flex-wrap: wrap; gap: 12px; }
+
+  .card {
+    border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
+    background: rgba(10,13,23,.6); display: flex; align-items: flex-start; gap: 12px;
+    transition: border-color .2s, transform .2s;
+    cursor: default;
+  }
+  .card:hover { border-color: rgba(45,124,255,.5); transform: translateY(-1px); }
+  .card.cyan:hover { border-color: rgba(54,214,255,.5); }
+  .card.violet:hover { border-color: rgba(122,60,240,.5); }
+  .card.green:hover { border-color: rgba(34,197,94,.5); }
+  .card.amber:hover { border-color: rgba(245,158,11,.5); }
+
+  .badge {
+    min-width: 44px; height: 44px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: monospace; font-size: 12px; font-weight: 700;
+    flex-shrink: 0; letter-spacing: .04em;
+  }
+  .badge.blue   { background: rgba(45,124,255,.15);  border: 1px solid rgba(45,124,255,.35);  color: var(--blue); }
+  .badge.cyan   { background: rgba(54,214,255,.12);  border: 1px solid rgba(54,214,255,.3);   color: var(--cyan); }
+  .badge.violet { background: rgba(122,60,240,.15);  border: 1px solid rgba(122,60,240,.35);  color: var(--violet); }
+  .badge.green  { background: rgba(34,197,94,.12);   border: 1px solid rgba(34,197,94,.3);    color: var(--green); }
+  .badge.amber  { background: rgba(245,158,11,.12);  border: 1px solid rgba(245,158,11,.3);   color: var(--amber); }
+  .badge.red    { background: rgba(239,68,68,.12);   border: 1px solid rgba(239,68,68,.3);    color: var(--red); }
+
+  .card-body h3 { font-size: .92rem; font-weight: 600; margin-bottom: 4px; color: var(--text); }
+  .card-body p  { font-size: .8rem; color: var(--muted); line-height: 1.5; }
+  .card-body .tags { margin-top: 7px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .tag {
+    font-family: monospace; font-size: 10px; padding: 2px 8px;
+    border-radius: 4px; background: rgba(45,124,255,.08);
+    border: 1px solid rgba(45,124,255,.2); color: #9cc0ff;
+  }
+  .tag.cyan   { background: rgba(54,214,255,.08);  border-color: rgba(54,214,255,.25);  color: var(--cyan); }
+  .tag.violet { background: rgba(122,60,240,.08);  border-color: rgba(122,60,240,.25);  color: #b07afe; }
+  .tag.green  { background: rgba(34,197,94,.08);   border-color: rgba(34,197,94,.25);   color: var(--green); }
+  .tag.amber  { background: rgba(245,158,11,.08);  border-color: rgba(245,158,11,.25);  color: var(--amber); }
+  .tag.red    { background: rgba(239,68,68,.08);   border-color: rgba(239,68,68,.25);   color: var(--red); }
+
+  /* Arrow connectors */
+  .arrow-row {
+    display: flex; align-items: center; justify-content: center;
+    padding: 4px 0; gap: 0; position: relative;
+  }
+  .arrow-down {
+    display: flex; flex-direction: column; align-items: center;
+    color: var(--dim); font-size: 20px; line-height: 1;
+    padding: 2px 0;
+  }
+  .arrow-down .line { width: 2px; height: 28px; background: linear-gradient(180deg, var(--line), rgba(45,124,255,.5)); }
+  .arrow-down .tip { color: var(--blue); font-size: 14px; }
+
+  .arrow-label {
+    font-family: monospace; font-size: 10px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--dim); margin-left: 10px;
+  }
+
+  /* Flow path: multi-column */
+  .flow-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
+  .flow-col {
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+  }
+  .flow-card {
+    width: 100%; border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 14px; background: rgba(10,13,23,.6);
+    text-align: center; position: relative;
+  }
+  .flow-num {
+    font-family: monospace; font-size: 10px; letter-spacing: .1em;
+    margin-bottom: 10px;
+  }
+  .flow-icon {
+    width: 48px; height: 48px; border-radius: 12px; margin: 0 auto 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .flow-card h3 { font-size: .87rem; font-weight: 600; margin-bottom: 6px; }
+  .flow-card p  { font-size: .76rem; color: var(--muted); line-height: 1.5; }
+
+  .flow-arrow {
+    display: flex; align-items: center; padding-top: 32px;
+    color: rgba(45,124,255,.5); font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  /* AWS section */
+  .aws-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  .aws-card {
+    border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px; background: rgba(10,13,23,.6);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .aws-card:hover { border-color: rgba(245,158,11,.4); }
+  .aws-head { display: flex; align-items: center; gap: 10px; }
+  .aws-ic {
+    width: 40px; height: 40px; border-radius: 9px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: monospace; font-size: 11px; font-weight: 700; letter-spacing: .02em;
+    background: rgba(245,158,11,.12); border: 1px solid rgba(245,158,11,.3); color: var(--amber);
+  }
+  .aws-ic.violet { background: rgba(122,60,240,.15); border-color: rgba(122,60,240,.35); color: var(--violet); }
+  .aws-ic.green  { background: rgba(34,197,94,.12);  border-color: rgba(34,197,94,.3);   color: var(--green); }
+  .aws-tag { font-family: monospace; font-size: 9px; letter-spacing: .15em; text-transform: uppercase; color: var(--dim); }
+  .aws-name { font-size: .9rem; font-weight: 600; color: var(--text); }
+  .aws-desc { font-size: .78rem; color: var(--muted); line-height: 1.55; }
+
+  /* Output section */
+  .output-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+  }
+  .out-card {
+    border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px; background: rgba(10,13,23,.6);
+    display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px;
+  }
+  .out-icon { font-size: 28px; }
+  .out-card h3 { font-size: .9rem; font-weight: 600; }
+  .out-card p  { font-size: .78rem; color: var(--muted); line-height: 1.5; }
+
+  /* Legend */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;
+    padding: 20px; border: 1px solid var(--line); border-radius: 12px;
+    background: rgba(10,13,23,.4); margin-top: 40px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: .8rem; color: var(--muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* CW card special */
+  .cw-card { border-color: rgba(122,60,240,.2); }
+
+  /* Dividers with labels */
+  .divider {
+    display: flex; align-items: center; gap: 16px; margin: 28px 0 20px;
+  }
+  .divider-line { flex: 1; height: 1px; background: var(--line); }
+  .divider-label {
+    font-family: monospace; font-size: 11px; letter-spacing: .18em;
+    text-transform: uppercase; white-space: nowrap; padding: 4px 16px;
+    border-radius: 100px; border: 1px solid var(--line);
+  }
+  .divider-label.blue   { color: var(--blue);   border-color: rgba(45,124,255,.3);  background: rgba(45,124,255,.05); }
+  .divider-label.amber  { color: var(--amber);  border-color: rgba(245,158,11,.3);  background: rgba(245,158,11,.05); }
+  .divider-label.green  { color: var(--green);  border-color: rgba(34,197,94,.3);   background: rgba(34,197,94,.05); }
+  .divider-label.violet { color: var(--violet); border-color: rgba(122,60,240,.3);  background: rgba(122,60,240,.05); }
+
+  /* Main arrow + event bus line */
+  .event-bus {
+    border: 1px dashed rgba(245,158,11,.35); border-radius: 10px; padding: 12px 20px;
+    background: rgba(245,158,11,.04); margin: 12px 0;
+    font-size: .8rem; color: var(--amber); font-family: monospace;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .big-arrow {
+    text-align: center; color: rgba(45,124,255,.5); font-size: 28px;
+    padding: 6px 0; line-height: 1;
+  }
+
+  @media (max-width: 860px) {
+    .flow-grid { grid-template-columns: 1fr; }
+    .aws-grid  { grid-template-columns: 1fr; }
+    .output-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div><span class="eyebrow"><span class="dot"></span>System Architecture · End-to-End</span></div>
+    <h1>Synapti-K AI — <em>How it works</em></h1>
+    <p class="subtitle">From raw video to an Origin-Destination report — every step, every AWS service, every worker.</p>
+  </div>
+
+  <div class="diagram">
+
+    <!-- ═══════════════════════════════════════
+         STEP 1 — INPUT
+    ══════════════════════════════════════════ -->
+    <div class="divider">
+      <div class="divider-line"></div>
+      <span class="divider-label cyan">01 · Input</span>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="zone" style="border-color: rgba(54,214,255,.25);">
+      <div class="zone-title cyan">📷 Video Sources</div>
+      <div class="cards row-cards">
+        <div class="card cyan" style="flex:1; min-width:200px;">
+          <div class="badge cyan">CAM</div>
+          <div class="card-body">
+            <h3>Fixed Camera / Live Stream</h3>
+            <p>Overhead, oblique or elevated camera angles. RTSP / RTMP streams or direct capture.</p>
+            <div class="tags"><span class="tag cyan">RTSP</span><span class="tag cyan">RTMP</span><span class="tag cyan">live</span></div>
+          </div>
+        </div>
+        <div class="card cyan" style="flex:1; min-width:200px;">
+          <div class="badge cyan">FILE</div>
+          <div class="card-body">
+            <h3>Recorded Video File</h3>
+            <p>MP4, AVI, MOV — hours of existing footage from any angle, no recalibration needed.</p>
+            <div class="tags"><span class="tag cyan">MP4</span><span class="tag cyan">AVI</span><span class="tag cyan">MOV</span></div>
+          </div>
+        </div>
+        <div class="card amber" style="flex:1; min-width:200px;">
+          <div class="badge amber">API</div>
+          <div class="card-body">
+            <h3>Upload via API / Console</h3>
+            <p>Client uploads video directly to Amazon S3 via pre-signed URL or management console. Upload triggers the pipeline automatically.</p>
+            <div class="tags"><span class="tag amber">pre-signed URL</span><span class="tag amber">auto-trigger</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="big-arrow">↓</div>
+
+    <!-- ═══════════════════════════════════════
+         STEP 2 — AWS STORAGE & TRIGGER
+    ══════════════════════════════════════════ -->
+    <div class="divider">
+      <div class="divider-line"></div>
+      <span class="divider-label amber">02 · AWS Ingest &amp; Trigger</span>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="zone" style="border-color: rgba(245,158,11,.25);">
+      <div class="zone-title amber">☁️ Amazon Web Services — Storage &amp; Event Layer</div>
+      <div class="aws-grid">
+
+        <div class="aws-card">
+          <div class="aws-head">
+            <div class="aws-ic">S3</div>
+            <div>
+              <div class="aws-tag">Storage</div>
+              <div class="aws-name">Amazon S3</div>
+            </div>
+          </div>
+          <div class="aws-desc">
+            Input bucket receives the raw video file. Eleven-nine durability. An <strong>S3 Event Notification</strong> fires the moment the upload is complete — no polling, no manual step.
+          </div>
+          <div class="cards row-cards" style="margin-top:6px">
+            <span class="tag amber">input/</span>
+            <span class="tag amber">output/</span>
+            <span class="tag amber">reports/</span>
+          </div>
+        </div>
+
+        <div class="aws-card">
+          <div class="aws-head">
+            <div class="aws-ic violet">λ</div>
+            <div>
+              <div class="aws-tag">Orchestration · Trigger</div>
+              <div class="aws-name">AWS Lambda — Ingest Handler</div>
+            </div>
+          </div>
+          <div class="aws-desc">
+            S3 event wakes this serverless function. It validates the file, writes a job record to the database, then enqueues a message in SQS. No servers to maintain.
+          </div>
+          <div class="cards row-cards" style="margin-top:6px">
+            <span class="tag violet">event-driven</span>
+            <span class="tag violet">serverless</span>
+          </div>
+        </div>
+
+        <div class="aws-card">
+          <div class="aws-head">
+            <div class="aws-ic">SQS</div>
+            <div>
+              <div class="aws-tag">Job Queue</div>
+              <div class="aws-name">Amazon SQS</div>
+            </div>
+          </div>
+          <div class="aws-desc">
+            Durable FIFO queue that decouples ingest from processing. Handles traffic bursts, retries failed jobs automatically. No video is ever lost or skipped.
+          </div>
+          <div class="cards row-cards" style="margin-top:6px">
+            <span class="tag amber">FIFO</span>
+            <span class="tag amber">auto-retry</span>
+            <span class="tag amber">DLQ</span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="event-bus" style="margin-top:16px;">
+        <span>⚡</span>
+        <span>Event bus: S3 upload → Lambda (ingest) → SQS message → AWS Batch job submission — fully automatic, no manual steps</span>
+      </div>
+    </div>
+
+    <div class="big-arrow">↓</div>
+
+    <!-- ═══════════════════════════════════════
+         STEP 3 — COMPUTE: BATCH + GPU WORKER
+    ══════════════════════════════════════════ -->
+    <div class="divider">
+      <div class="divider-line"></div>
+      <span class="divider-label violet">03 · GPU Compute — The Worker</span>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="zone" style="border-color: rgba(122,60,240,.3);">
+      <div class="zone-title violet">⚙️ AWS Batch + EC2 GPU — Inference Pipeline</div>
+
+      <!-- Batch orchestrator -->
+      <div class="aws-grid" style="margin-bottom:20px; grid-template-columns: 1fr 1fr;">
+        <div class="aws-card">
+          <div class="aws-head">
+            <div class="aws-ic violet">BCH</div>
+            <div>
+              <div class="aws-tag">Batch Processing</div>
+              <div class="aws-name">AWS Batch</div>
+            </div>
+          </div>
+          <div class="aws-desc">
+            Reads SQS messages and provisions GPU capacity per job. Scales to dozens of simultaneous videos. Releases instances as soon as the job completes — zero idle machines.
+          </div>
+          <div class="cards row-cards" style="margin-top:6px">
+            <span class="tag violet">auto-scale</span>
+            <span class="tag violet">spot + on-demand</span>
+          </div>
+        </div>
+        <div class="aws-card">
+          <div class="aws-head">
+            <div class="aws-ic violet">GPU</div>
+            <div>
+              <div class="aws-tag">Inference Engine</div>
+              <div class="aws-name">EC2 · NVIDIA GPU (G4dn / G5)</div>
+            </div>
+          </div>
+          <div class="aws-desc">
+            NVIDIA T4 (G4dn) or A10G (G5) cards. Runs the detection models at full resolution. Hours of footage processed in minutes. Container-based — Docker image pulled from ECR.
+          </div>
+          <div class="cards row-cards" style="margin-top:6px">
+            <span class="tag violet">NVIDIA T4</span>
+            <span class="tag violet">NVIDIA A10G</span>
+            <span class="tag violet">CUDA</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- The 5-step AI pipeline inside the worker -->
+      <div class="zone-title violet" style="margin-top:4px; margin-bottom:14px;">
+        🔬 Worker: AI Pipeline — 5 Stages executed per video
+      </div>
+
+      <div class="flow-grid">
+
+        <div class="flow-col">
+          <div class="flow-card" style="border-color: rgba(54,214,255,.3);">
+            <div class="flow-num" style="color:var(--cyan);">STEP 01</div>
+            <div class="flow-icon" style="background:rgba(54,214,255,.1); border:1px solid rgba(54,214,255,.25);">🎥</div>
+            <h3 style="color:var(--cyan);">Ingest</h3>
+            <p>Worker pulls the raw video from S3. Decodes frames with FFMPEG. Validates resolution and framerate.</p>
+          </div>
+        </div>
+
+        <div class="flow-arrow">→</div>
+
+        <div class="flow-col">
+          <div class="flow-card" style="border-color: rgba(45,124,255,.3);">
+            <div class="flow-num" style="color:var(--blue);">STEP 02</div>
+            <div class="flow-icon" style="background:rgba(45,124,255,.1); border:1px solid rgba(45,124,255,.25);">🔍</div>
+            <h3 style="color:var(--blue);">Detection</h3>
+            <p>Every frame runs through our computer vision model. Detects &amp; classifies: moto, car, truck, bus, bicycle, pedestrian.</p>
+          </div>
+        </div>
+
+        <div class="flow-arrow">→</div>
+
+        <div class="flow-col">
+          <div class="flow-card" style="border-color: rgba(122,60,240,.3);">
+            <div class="flow-num" style="color:var(--violet);">STEP 03</div>
+            <div class="flow-icon" style="background:rgba(122,60,240,.1); border:1px solid rgba(122,60,240,.25);">🎯</div>
+            <h3 style="color:var(--violet);">Tracking</h3>
+            <p>Assigns a persistent unique ID to each object. Follows vehicles across occlusions. Eliminates double-counts.</p>
+          </div>
+        </div>
+
+        <div class="flow-arrow">→</div>
+
+        <div class="flow-col">
+          <div class="flow-card" style="border-color: rgba(34,197,94,.3);">
+            <div class="flow-num" style="color:var(--green);">STEP 04</div>
+            <div class="flow-icon" style="background:rgba(34,197,94,.1); border:1px solid rgba(34,197,94,.25);">🗺️</div>
+            <h3 style="color:var(--green);">Origin-Destination</h3>
+            <p>Virtual lines define zones. Each tracked vehicle is mapped to an O→D pair. Counts accumulated per route &amp; class.</p>
+          </div>
+        </div>
+
+        <div class="flow-arrow">→</div>
+
+        <div class="flow-col">
+          <div class="flow-card" style="border-color: rgba(245,158,11,.3);">
+            <div class="flow-num" style="color:var(--amber);">STEP 05</div>
+            <div class="flow-icon" style="background:rgba(245,158,11,.1); border:1px solid rgba(245,158,11,.25);">📊</div>
+            <h3 style="color:var(--amber);">Aggregate</h3>
+            <p>Worker writes results: OD matrix, per-class counts, route stats, per-vehicle track IDs. Pushes outputs to S3.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="event-bus" style="margin-top:20px; border-color:rgba(122,60,240,.35); background:rgba(122,60,240,.04); color:var(--violet);">
+        <span>🚀</span>
+        <span>GPU Worker also writes an annotated video (bounding boxes, IDs, route lines) back to S3 output/ — alongside the raw data files.</span>
+      </div>
+    </div>
+
+    <div class="big-arrow">↓</div>
+
+    <!-- ═══════════════════════════════════════
+         STEP 4 — POST-PROCESSING & REPORT
+    ══════════════════════════════════════════ -->
+    <div class="divider">
+      <div class="divider-line"></div>
+      <span class="divider-label blue">04 · Report Delivery</span>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="zone" style="border-color: rgba(45,124,255,.25);">
+      <div class="zone-title blue">📬 AWS Lambda — Report Handler + Delivery</div>
+      <div class="cards row-cards">
+        <div class="card" style="flex:1; min-width:220px;">
+          <div class="badge violet">λ</div>
+          <div class="card-body">
+            <h3>Report Generator Lambda</h3>
+            <p>Triggered when the Batch job finishes. Reads raw counts from S3, formats the full OD matrix report, generates PDF/CSV, and emails or pushes to the client endpoint.</p>
+            <div class="tags"><span class="tag violet">PDF</span><span class="tag violet">CSV</span><span class="tag violet">JSON</span></div>
+          </div>
+        </div>
+        <div class="card" style="flex:1; min-width:220px;">
+          <div class="badge blue">S3</div>
+          <div class="card-body">
+            <h3>Output Bucket</h3>
+            <p>Final artifacts stored with 11-nine durability: annotated video, OD matrix, plain-text report, per-vehicle log. Pre-signed URLs for client download.</p>
+            <div class="tags"><span class="tag">annotated video</span><span class="tag">OD matrix</span><span class="tag">report</span></div>
+          </div>
+        </div>
+        <div class="card" style="flex:1; min-width:220px;">
+          <div class="badge amber">SES</div>
+          <div class="card-body">
+            <h3>Delivery Channel</h3>
+            <p>Report and download links sent to the client via email (SES) or webhook. Client can also pull results from the API or S3 pre-signed URL directly.</p>
+            <div class="tags"><span class="tag amber">email</span><span class="tag amber">webhook</span><span class="tag amber">API</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         STEP 5 — OUTPUTS
+    ══════════════════════════════════════════ -->
+    <div class="divider">
+      <div class="divider-line"></div>
+      <span class="divider-label green">05 · Outputs</span>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="zone" style="border-color: rgba(34,197,94,.25);">
+      <div class="zone-title green">✅ What the client receives</div>
+      <div class="output-grid">
+        <div class="out-card" style="border-color:rgba(34,197,94,.3);">
+          <div class="out-icon">🎬</div>
+          <h3>Annotated Video</h3>
+          <p>Original footage with bounding boxes, persistent vehicle IDs, class labels and route lines drawn on every frame.</p>
+          <div class="tags" style="justify-content:center; margin-top:8px;">
+            <span class="tag green">MP4</span><span class="tag green">full-res</span>
+          </div>
+        </div>
+        <div class="out-card" style="border-color:rgba(45,124,255,.3);">
+          <div class="out-icon">🗺️</div>
+          <h3>OD Matrix Report</h3>
+          <p>Full origin-destination matrix: total vehicles per route, per class (moto / car / heavy), per direction. Auditable with individual track IDs.</p>
+          <div class="tags" style="justify-content:center; margin-top:8px;">
+            <span class="tag">CSV</span><span class="tag">PDF</span><span class="tag">JSON</span>
+          </div>
+        </div>
+        <div class="out-card" style="border-color:rgba(122,60,240,.3);">
+          <div class="out-icon">📋</div>
+          <h3>Plain-Text Event Log</h3>
+          <p>Per-vehicle detection log: timestamp, class, route, confidence and unique track ID for full auditability and integration.</p>
+          <div class="tags" style="justify-content:center; margin-top:8px;">
+            <span class="tag violet">TXT</span><span class="tag violet">JSON</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         OBSERVABILITY
+    ══════════════════════════════════════════ -->
+    <div class="divider">
+      <div class="divider-line"></div>
+      <span class="divider-label violet">Cross-Cutting · Observability</span>
+      <div class="divider-line"></div>
+    </div>
+
+    <div class="zone cw-card" style="border-color: rgba(122,60,240,.2);">
+      <div class="zone-title violet">📡 Amazon CloudWatch — End-to-End Monitoring</div>
+      <div class="cards row-cards">
+        <div class="card violet" style="flex:1; min-width:180px;">
+          <div class="badge violet">CW</div>
+          <div class="card-body">
+            <h3>Job Tracking</h3>
+            <p>Every job logged end-to-end: queue wait time, processing duration, completion status.</p>
+            <div class="tags"><span class="tag violet">logs</span><span class="tag violet">metrics</span></div>
+          </div>
+        </div>
+        <div class="card violet" style="flex:1; min-width:180px;">
+          <div class="badge violet">CW</div>
+          <div class="card-body">
+            <h3>GPU Utilization</h3>
+            <p>Real-time GPU memory, compute utilization and inference throughput per EC2 instance.</p>
+            <div class="tags"><span class="tag violet">GPU %</span><span class="tag violet">fps</span></div>
+          </div>
+        </div>
+        <div class="card violet" style="flex:1; min-width:180px;">
+          <div class="badge violet">CW</div>
+          <div class="card-body">
+            <h3>Queue Depth</h3>
+            <p>SQS queue depth alarm: triggers scale-out when backlog exceeds threshold.</p>
+            <div class="tags"><span class="tag violet">alarm</span><span class="tag violet">auto-scale</span></div>
+          </div>
+        </div>
+        <div class="card violet" style="flex:1; min-width:180px;">
+          <div class="badge red">ERR</div>
+          <div class="card-body">
+            <h3>Error Rates &amp; Alerts</h3>
+            <p>Lambda errors, Batch job failures, S3 access errors — all alerted in real time via SNS.</p>
+            <div class="tags"><span class="tag red">SNS</span><span class="tag red">alerts</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot" style="background:var(--cyan)"></span>Input / ingest layer</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span>AWS storage &amp; event layer</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--violet)"></span>GPU compute worker (AI pipeline)</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span>Report generation &amp; delivery</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>Client outputs</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#b07afe"></span>Observability (CloudWatch)</span>
+    </div>
+
+  </div><!-- /diagram -->
+</div><!-- /page -->
+</body>
+</html>

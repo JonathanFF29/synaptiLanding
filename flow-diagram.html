@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synapti-K AI — Flow Diagram</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --void:   #05060A;
+    --ink:    #0A0D17;
+    --panel:  #0E1322;
+    --line:   #1B2236;
+    --blue:   #2D7CFF;
+    --violet: #7A3CF0;
+    --cyan:   #36D6FF;
+    --green:  #22C55E;
+    --amber:  #F59E0B;
+    --red:    #EF4444;
+    --text:   #E9EDF8;
+    --muted:  #8A93AB;
+    --dim:    #586079;
+    --grad: linear-gradient(105deg,#36D6FF 0%,#2D7CFF 40%,#7A3CF0 100%);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--void);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 48px 24px 72px;
+    opacity: 0;
+    transition: opacity .45s ease;
+  }
+  body.ready { opacity: 1; }
+
+  body::before {
+    content: "";
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(900px 600px at 85% -5%,  rgba(45,124,255,.13), transparent 60%),
+      radial-gradient(700px 500px at 5%  5%,   rgba(122,60,240,.11), transparent 60%),
+      radial-gradient(600px 400px at 50% 100%, rgba(54,214,255,.06), transparent 60%);
+  }
+
+  /* ── Loading overlay ─────────────────────────── */
+  #flow-loader {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #05060A;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 28px;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    transition: opacity .5s ease;
+  }
+  #flow-loader.done { opacity: 0; pointer-events: none; }
+
+  .loader-logo {
+    font-size: 13px; letter-spacing: .22em; color: var(--cyan);
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .loader-spinner {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 2px solid rgba(54,214,255,.12);
+    border-top-color: var(--cyan);
+    border-right-color: var(--violet);
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loader-lines {
+    display: flex; flex-direction: column; gap: 6px;
+    width: min(480px, 90vw);
+  }
+  .loader-line {
+    font-size: 11px; color: var(--dim); letter-spacing: .08em;
+    display: flex; align-items: center; gap: 10px;
+    opacity: 0; transform: translateX(-6px);
+    transition: opacity .2s ease, transform .2s ease;
+  }
+  .loader-line.show { opacity: 1; transform: none; }
+  .ll-badge {
+    min-width: 38px; padding: 1px 6px; border-radius: 4px;
+    font-size: 9px; font-weight: 700; text-align: center; border: 1px solid;
+    flex-shrink: 0;
+  }
+  .ll-a { color: #F59E0B; border-color: rgba(245,158,11,.4); background: rgba(245,158,11,.07); }
+  .ll-v { color: #7A3CF0; border-color: rgba(122,60,240,.4); background: rgba(122,60,240,.07); }
+  .ll-c { color: #36D6FF; border-color: rgba(54,214,255,.4); background: rgba(54,214,255,.07); }
+  .ll-g { color: #22C55E; border-color: rgba(34,197,94,.4);  background: rgba(34,197,94,.07); }
+  .loader-status {
+    font-size: 11px; letter-spacing: .15em; color: var(--cyan);
+    text-transform: uppercase; display: flex; align-items: center; gap: 8px;
+  }
+  .loader-bar-wrap { width: min(360px,80vw); height: 3px; background: #1B2236; border-radius: 2px; overflow: hidden; }
+  .loader-bar { height: 100%; width: 0; border-radius: 2px;
+    background: linear-gradient(90deg,#36D6FF,#2D7CFF,#7A3CF0);
+    transition: width .4s ease; }
+  .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan); animation: ldpulse 1.2s infinite; flex-shrink: 0; }
+  @keyframes ldpulse { 0%,100%{opacity:1}50%{opacity:.2} }
+
+  /* ── Page layout ─────────────────────────────── */
+  .page { max-width: 1180px; margin: 0 auto; position: relative; z-index: 1; }
+
+  /* ── Top bar ─────────────────────────────────── */
+  .top-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 32px; flex-wrap: wrap; gap: 12px;
+  }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: monospace; font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--dim); text-decoration: none;
+    border: 1px solid var(--line); border-radius: 8px; padding: 7px 16px;
+    transition: color .2s, border-color .2s;
+  }
+  .back-link:hover { color: var(--text); border-color: #586079; }
+
+  .lang-toggle {
+    display: flex; align-items: center; gap: 6px;
+    font-family: monospace; font-size: 11px;
+  }
+  .lang-sep { color: var(--dim); }
+  .lang-btn {
+    background: none; border: 1px solid var(--line); border-radius: 6px;
+    color: var(--dim); font-family: monospace; font-size: 11px;
+    letter-spacing: .1em; padding: 4px 10px; cursor: pointer;
+    transition: color .2s, border-color .2s;
+  }
+  .lang-btn:hover { color: var(--text); }
+  .lang-btn.active { color: var(--cyan); border-color: rgba(54,214,255,.4); }
+
+  /* ── Header ─────────────────────────────────── */
+  .header { text-align: center; margin-bottom: 56px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 11px; letter-spacing: .18em; color: var(--cyan);
+    text-transform: uppercase; font-family: monospace;
+    border: 1px solid rgba(54,214,255,.25); padding: 5px 16px;
+    border-radius: 100px; background: rgba(54,214,255,.05); margin-bottom: 18px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cyan);
+    box-shadow: 0 0 10px var(--cyan); animation: pulse 1.8s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  h1 { font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight: 700; line-height: 1.1; }
+  h1 em { font-style: normal; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .subtitle { color: var(--muted); margin-top: 12px; font-size: .97rem; }
+
+  /* ── Diagram box ─────────────────────────────── */
+  .diagram-box {
+    border: 1px solid var(--line); border-radius: 20px;
+    background: linear-gradient(160deg, rgba(14,19,34,.85), rgba(10,13,23,.6));
+    padding: 40px 32px 48px;
+    overflow-x: auto;
+  }
+  .mermaid { min-width: 700px; }
+
+  /* ── Parallel banner ─────────────────────────── */
+  .parallel-banner {
+    border: 1px solid rgba(122,60,240,.35); border-radius: 14px;
+    background: rgba(122,60,240,.05); padding: 20px 28px;
+    display: flex; align-items: center; gap: 18px;
+    margin-bottom: 24px;
+  }
+  .pb-icon { font-size: 28px; flex-shrink: 0; }
+  .pb-body h3 { font-size: .95rem; font-weight: 600; color: var(--violet); margin-bottom: 4px; }
+  .pb-body p  { font-size: .82rem; color: var(--muted); line-height: 1.55; }
+  .pb-tag {
+    font-family: monospace; font-size: 10px; padding: 3px 10px;
+    border-radius: 4px; border: 1px solid rgba(122,60,240,.3);
+    color: #b07afe; background: rgba(122,60,240,.08);
+    white-space: nowrap; flex-shrink: 0;
+  }
+
+  /* ── Section label ───────────────────────────── */
+  .section-label {
+    font-family: monospace; font-size: 11px; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--dim); text-align: center;
+    margin: 40px 0 16px;
+  }
+
+  /* ── Chunk flow ──────────────────────────────── */
+  .chunk-flow {
+    display: grid; grid-template-columns: auto 1fr auto 1fr auto;
+    align-items: center; gap: 10px; margin-bottom: 16px;
+  }
+  .chunk-node {
+    border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px;
+    background: rgba(10,13,23,.6); text-align: center;
+  }
+  .chunk-node .cn-icon { font-size: 20px; margin-bottom: 6px; }
+  .chunk-node h4 { font-size: .82rem; font-weight: 600; }
+  .chunk-node p  { font-size: .72rem; color: var(--muted); margin-top: 3px; }
+  .chunk-arrow { text-align: center; color: rgba(45,124,255,.5); font-size: 20px; }
+
+  /* ── GPU grid ────────────────────────────────── */
+  .gpu-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px;
+  }
+  .gpu-card {
+    border: 1px solid rgba(122,60,240,.35); border-radius: 10px; padding: 14px 12px;
+    background: rgba(122,60,240,.05); text-align: center; font-family: monospace; font-size: 11px;
+  }
+  .gpu-card .gc-icon  { font-size: 18px; margin-bottom: 6px; }
+  .gpu-card .gc-label { color: var(--violet); font-weight: 700; margin-bottom: 3px; }
+  .gpu-card .gc-time  { color: var(--dim); font-size: 10px; }
+
+  /* ── Pipeline steps ──────────────────────────── */
+  .steps {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+  }
+  .step {
+    border: 1px solid var(--line); border-radius: 12px; padding: 16px 14px;
+    background: rgba(10,13,23,.55); text-align: center;
+  }
+  .step-num  { font-family: monospace; font-size: 10px; letter-spacing: .12em; margin-bottom: 8px; }
+  .step-icon { font-size: 22px; margin-bottom: 8px; }
+  .step h3   { font-size: .84rem; font-weight: 600; margin-bottom: 4px; }
+  .step p    { font-size: .75rem; color: var(--muted); line-height: 1.5; }
+
+  /* ── Legend ──────────────────────────────────── */
+  .legend {
+    display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;
+    padding: 18px 24px; border: 1px solid var(--line); border-radius: 12px;
+    background: rgba(10,13,23,.45); margin-top: 32px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: .8rem; color: var(--muted); }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+
+  @media (max-width: 860px) {
+    .steps      { grid-template-columns: 1fr 1fr; }
+    .gpu-grid   { grid-template-columns: 1fr 1fr; }
+    .chunk-flow { grid-template-columns: 1fr; }
+    .chunk-arrow { transform: rotate(90deg); }
+    .parallel-banner { flex-direction: column; }
+  }
+  @media (max-width: 500px) {
+    .steps { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Loading overlay ────────────────────────── -->
+<div id="flow-loader">
+  <div class="loader-logo">
+    <div class="loader-spinner"></div>
+    <span id="loader-title">Synapti-K AI · Loading diagram</span>
+  </div>
+  <div class="loader-lines">
+    <div class="loader-line" id="ll0"><span class="ll-badge ll-a">S3</span>  <span id="ll0t"></span></div>
+    <div class="loader-line" id="ll1"><span class="ll-badge ll-v">λ</span>   <span id="ll1t"></span></div>
+    <div class="loader-line" id="ll2"><span class="ll-badge ll-a">✂️</span>  <span id="ll2t"></span></div>
+    <div class="loader-line" id="ll3"><span class="ll-badge ll-a">SQS</span> <span id="ll3t"></span></div>
+    <div class="loader-line" id="ll4"><span class="ll-badge ll-v">GPU</span> <span id="ll4t"></span></div>
+    <div class="loader-line" id="ll5"><span class="ll-badge ll-g">AGG</span> <span id="ll5t"></span></div>
+    <div class="loader-line" id="ll6"><span class="ll-badge ll-c">OK</span>  <span id="ll6t"></span></div>
+  </div>
+  <div class="loader-bar-wrap"><div class="loader-bar" id="loader-bar"></div></div>
+  <div class="loader-status">
+    <span class="pulse-dot"></span>
+    <span id="loader-status-txt">Initializing…</span>
+  </div>
+</div>
+
+<!-- ── Page ───────────────────────────────────── -->
+<div class="page">
+
+  <div class="top-bar">
+    <a href="index.html" class="back-link" data-i18n="backLink"></a>
+    <div class="lang-toggle">
+      <button class="lang-btn" data-lang="en">EN</button>
+      <span class="lang-sep">|</span>
+      <button class="lang-btn" data-lang="es">ES</button>
+    </div>
+  </div>
+
+  <div class="header">
+    <div><span class="eyebrow"><span class="dot"></span><span data-i18n="eyebrow"></span></span></div>
+    <h1 data-i18n-html="h1"></h1>
+    <p class="subtitle" data-i18n="subtitle"></p>
+  </div>
+
+  <div class="diagram-box">
+    <div class="mermaid">
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "background":         "#0A0D17",
+    "mainBkg":            "#0E1322",
+    "nodeBorder":         "#1B2236",
+    "clusterBkg":         "rgba(14,19,34,0.55)",
+    "clusterBorder":      "#1B2236",
+    "lineColor":          "#2D7CFF",
+    "edgeLabelBackground":"#0A0D17",
+    "fontFamily":         "Segoe UI, system-ui, sans-serif",
+    "fontSize":           "13px",
+    "primaryColor":       "#0E1322",
+    "primaryTextColor":   "#E9EDF8",
+    "primaryBorderColor": "#1B2236",
+    "secondaryColor":     "#0E1322",
+    "tertiaryColor":      "#0E1322",
+    "labelTextColor":     "#E9EDF8",
+    "nodeTextColor":      "#E9EDF8"
+  }
+}}%%
+flowchart TD
+
+  subgraph INPUT["📷  Input Layer"]
+    direction LR
+    CAM("🎥 Camera · Stream\nRTSP / RTMP")
+    FILE("📁 Video File\nMP4 / AVI / MOV")
+    API("🔗 Client Upload\nPre-signed URL")
+  end
+
+  subgraph INGEST["☁️  AWS — Ingest & Split"]
+    direction TB
+    S3IN[("🗄️ Amazon S3\nInput Bucket")]
+    LAMBDA_IN["λ  Lambda\nIngest Handler"]
+    CHUNKER["✂️  Video Chunker\n10-min segments"]
+    SQS[["📨 Amazon SQS\nOne message per chunk · FIFO"]]
+  end
+
+  subgraph COMPUTE["⚙️  AWS Batch — Parallel GPU Processing"]
+    direction TB
+    BATCH["📦 AWS Batch\nOne EC2 GPU per chunk"]
+
+    subgraph PARALLEL["🔀  Parallel — each chunk on its own EC2 GPU"]
+      direction LR
+      GPU1["🖥️ EC2 GPU #1\n00:00 – 10:00\nIngest→Detect→Track→OD→Agg"]
+      GPU2["🖥️ EC2 GPU #2\n10:00 – 20:00\nIngest→Detect→Track→OD→Agg"]
+      GPU3["🖥️ EC2 GPU #3\n20:00 – 30:00\nIngest→Detect→Track→OD→Agg"]
+      GPUN["🖥️ EC2 GPU #N\nN×10 – end\nIngest→Detect→Track→OD→Agg"]
+    end
+
+    AGG["🔗 Result Aggregator\nMerge OD matrices · stitch tracks"]
+  end
+
+  subgraph DELIVERY["📬  AWS — Report & Delivery"]
+    direction TB
+    S3OUT[("🗄️ Amazon S3\nOutput Bucket")]
+    LAMBDA_R["λ  Lambda\nReport Generator"]
+    SES["✉️  Amazon SES\n+ Webhook / API"]
+  end
+
+  subgraph OUTPUTS["✅  Client Receives"]
+    direction LR
+    O1("🎬 Annotated\nVideo  MP4")
+    O2("🗺️ OD Matrix\nCSV · PDF · JSON")
+    O3("📋 Event Log\nper-vehicle  TXT")
+  end
+
+  CW["📡 CloudWatch · Metrics · Logs · Alarms · SNS"]
+
+  CAM  -->|"stream / upload"| S3IN
+  FILE -->|"upload"| S3IN
+  API  -->|"pre-signed URL"| S3IN
+
+  S3IN      -->|"S3 Event Notification"| LAMBDA_IN
+  LAMBDA_IN -->|"trigger chunker"| CHUNKER
+  CHUNKER   -->|"N × 10-min segments → N SQS messages"| SQS
+  SQS       -->|"poll — one job per chunk"| BATCH
+
+  BATCH --> GPU1
+  BATCH --> GPU2
+  BATCH --> GPU3
+  BATCH --> GPUN
+
+  GPU1 --> AGG
+  GPU2 --> AGG
+  GPU3 --> AGG
+  GPUN --> AGG
+
+  AGG       -->|"merged results + stitched video"| S3OUT
+  S3OUT     -->|"Batch complete event"| LAMBDA_R
+  LAMBDA_R  -->|"PDF · CSV · JSON report"| SES
+  SES       -->|"email + download link"| O2
+
+  S3OUT --> O1
+  S3OUT --> O3
+
+  COMPUTE  -.->|"GPU metrics · job logs"| CW
+  INGEST   -.->|"Lambda logs · SQS depth"| CW
+  DELIVERY -.->|"errors · delivery status"| CW
+
+  classDef inputNode   fill:#0d1a2a,stroke:#36D6FF,color:#E9EDF8
+  classDef s3Node      fill:#1a1206,stroke:#F59E0B,color:#E9EDF8
+  classDef lambdaNode  fill:#16103a,stroke:#7A3CF0,color:#E9EDF8
+  classDef awsNode     fill:#1a1206,stroke:#F59E0B,color:#E9EDF8
+  classDef chunkerNode fill:#0a1f10,stroke:#22C55E,color:#E9EDF8
+  classDef gpuNode     fill:#16103a,stroke:#7A3CF0,color:#E9EDF8,font-weight:bold
+  classDef aggNode     fill:#0d1a2a,stroke:#2D7CFF,color:#E9EDF8
+  classDef outputNode  fill:#0a1f10,stroke:#22C55E,color:#E9EDF8
+  classDef cwNode      fill:#12102a,stroke:#7A3CF0,color:#8A93AB,font-style:italic
+
+  class CAM,FILE,API inputNode
+  class S3IN,S3OUT s3Node
+  class LAMBDA_IN,LAMBDA_R lambdaNode
+  class SQS,BATCH,SES awsNode
+  class CHUNKER chunkerNode
+  class GPU1,GPU2,GPU3,GPUN gpuNode
+  class AGG aggNode
+  class O1,O2,O3 outputNode
+  class CW cwNode
+    </div>
+
+    <!-- Parallel banner -->
+    <div class="parallel-banner" style="margin-top:32px;">
+      <span class="pb-icon">🔀</span>
+      <div class="pb-body">
+        <h3 data-i18n="pbTitle"></h3>
+        <p data-i18n="pbDesc"></p>
+      </div>
+      <span class="pb-tag" data-i18n="pbTag"></span>
+    </div>
+
+    <!-- Chunk flow -->
+    <div class="section-label" data-i18n="chunkLabel"></div>
+    <div class="chunk-flow" style="margin-bottom:16px;">
+      <div class="chunk-node" style="border-color:rgba(245,158,11,.35);">
+        <div class="cn-icon">📹</div>
+        <h4 data-i18n="cnOrigTitle"></h4>
+        <p data-i18n="cnOrigDesc"></p>
+      </div>
+      <div class="chunk-arrow">→</div>
+      <div class="chunk-node" style="border-color:rgba(34,197,94,.35);">
+        <div class="cn-icon">✂️</div>
+        <h4 data-i18n="cnChunkTitle"></h4>
+        <p data-i18n="cnChunkDesc"></p>
+      </div>
+      <div class="chunk-arrow">→</div>
+      <div class="chunk-node" style="border-color:rgba(122,60,240,.35);">
+        <div class="cn-icon">🔀</div>
+        <h4 data-i18n="cnGPUTitle"></h4>
+        <p data-i18n="cnGPUDesc"></p>
+      </div>
+    </div>
+
+    <div class="gpu-grid">
+      <div class="gpu-card">
+        <div class="gc-icon">🖥️</div>
+        <div class="gc-label">EC2 GPU #1</div>
+        <div class="gc-time">00:00 → 10:00</div>
+      </div>
+      <div class="gpu-card">
+        <div class="gc-icon">🖥️</div>
+        <div class="gc-label">EC2 GPU #2</div>
+        <div class="gc-time">10:00 → 20:00</div>
+      </div>
+      <div class="gpu-card">
+        <div class="gc-icon">🖥️</div>
+        <div class="gc-label">EC2 GPU #3</div>
+        <div class="gc-time">20:00 → 30:00</div>
+      </div>
+      <div class="gpu-card" style="border-color:rgba(45,124,255,.3); background:rgba(45,124,255,.04);">
+        <div class="gc-icon">🔗</div>
+        <div class="gc-label" style="color:var(--blue);" data-i18n="gcAggLabel"></div>
+        <div class="gc-time" data-i18n="gcAggTime"></div>
+      </div>
+    </div>
+
+    <!-- Per-GPU AI pipeline steps -->
+    <div class="section-label" data-i18n="pipeLabel"></div>
+    <div class="steps">
+      <div class="step" style="border-color:rgba(54,214,255,.35);">
+        <div class="step-num" style="color:var(--cyan);" data-i18n="s1num"></div>
+        <div class="step-icon">🎥</div>
+        <h3 style="color:var(--cyan);" data-i18n="s1title"></h3>
+        <p data-i18n="s1desc"></p>
+      </div>
+      <div class="step" style="border-color:rgba(45,124,255,.35);">
+        <div class="step-num" style="color:var(--blue);" data-i18n="s2num"></div>
+        <div class="step-icon">🔍</div>
+        <h3 style="color:var(--blue);" data-i18n="s2title"></h3>
+        <p data-i18n="s2desc"></p>
+      </div>
+      <div class="step" style="border-color:rgba(122,60,240,.35);">
+        <div class="step-num" style="color:var(--violet);" data-i18n="s3num"></div>
+        <div class="step-icon">🎯</div>
+        <h3 style="color:var(--violet);" data-i18n="s3title"></h3>
+        <p data-i18n="s3desc"></p>
+      </div>
+      <div class="step" style="border-color:rgba(34,197,94,.35);">
+        <div class="step-num" style="color:var(--green);" data-i18n="s4num"></div>
+        <div class="step-icon">🗺️</div>
+        <h3 style="color:var(--green);" data-i18n="s4title"></h3>
+        <p data-i18n="s4desc"></p>
+      </div>
+      <div class="step" style="border-color:rgba(245,158,11,.35);">
+        <div class="step-num" style="color:var(--amber);" data-i18n="s5num"></div>
+        <div class="step-icon">📊</div>
+        <h3 style="color:var(--amber);" data-i18n="s5title"></h3>
+        <p data-i18n="s5desc"></p>
+      </div>
+    </div>
+  </div><!-- /diagram-box -->
+
+  <div class="legend">
+    <span class="legend-item"><span class="swatch" style="background:rgba(54,214,255,.7)"></span><span data-i18n="lgInput"></span></span>
+    <span class="legend-item"><span class="swatch" style="background:rgba(34,197,94,.7)"></span><span data-i18n="lgChunker"></span></span>
+    <span class="legend-item"><span class="swatch" style="background:rgba(245,158,11,.7)"></span><span data-i18n="lgAWS"></span></span>
+    <span class="legend-item"><span class="swatch" style="background:rgba(122,60,240,.7)"></span><span data-i18n="lgGPU"></span></span>
+    <span class="legend-item"><span class="swatch" style="background:rgba(45,124,255,.7)"></span><span data-i18n="lgReport"></span></span>
+    <span class="legend-item"><span class="swatch" style="background:rgba(122,60,240,.35)"></span><span data-i18n="lgCW"></span></span>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+/* ── Translations ──────────────────────────────── */
+const T = {
+  en: {
+    pageTitle:    'Synapti-K AI — Flow Diagram',
+    backLink:     '← Back to landing',
+    eyebrow:      'System Flow · End-to-End · Parallel GPU',
+    h1:           'Synapti-K AI — <em>Flow Diagram</em>',
+    subtitle:     'Video is split into 10-minute chunks — each processed by a dedicated EC2 GPU in parallel, then merged into a single OD report.',
+    pbTitle:      'Parallel Processing — why it matters',
+    pbDesc:       'A 2-hour video produces 12 chunks. All 12 run simultaneously on dedicated EC2 GPU instances. Total wall-clock time collapses to ~10 minutes instead of 2 hours. AWS Batch releases each instance the moment its chunk finishes — zero idle time, pay only for what you use.',
+    pbTag:        '12× faster on 2h video',
+    chunkLabel:   'Video Chunking — How a 30-minute video fans out',
+    cnOrigTitle:  'Original Video',
+    cnOrigDesc:   'e.g. 30 min',
+    cnChunkTitle: 'Chunker',
+    cnChunkDesc:  '3 × 10-min segments',
+    cnGPUTitle:   '3 parallel EC2 GPUs',
+    cnGPUDesc:    'All running simultaneously',
+    gcAggLabel:   'Aggregator',
+    gcAggTime:    'Merges all results',
+    pipeLabel:    'Per-chunk AI Pipeline — runs inside every EC2 GPU worker',
+    s1num: 'STEP 01', s1title: 'Ingest',      s1desc: 'Worker pulls its 10-min chunk from S3. FFMPEG decodes frames. Validates resolution & framerate.',
+    s2num: 'STEP 02', s2title: 'Detection',   s2desc: 'Computer vision model runs on every frame. Classifies moto, car, truck, bus, bicycle, pedestrian.',
+    s3num: 'STEP 03', s3title: 'Tracking',    s3desc: 'Assigns persistent unique ID per object across the chunk. Eliminates double-counts.',
+    s4num: 'STEP 04', s4title: 'O-D Mapping', s4desc: 'Virtual zone lines map each tracked vehicle to an Origin → Destination pair and route.',
+    s5num: 'STEP 05', s5title: 'Chunk Output',s5desc: 'Partial OD matrix, per-class counts, route stats and track logs pushed to S3 for aggregation.',
+    lgInput:   'Input / client layer',
+    lgChunker: 'Video chunker',
+    lgAWS:     'AWS storage & queue',
+    lgGPU:     'Parallel EC2 GPU workers',
+    lgReport:  'Aggregator · report · delivery',
+    lgCW:      'CloudWatch observability — dashed',
+    /* loader */
+    loaderTitle: 'Synapti-K AI · Loading diagram',
+    ll: [
+      'Connecting to input bucket…',
+      'Ingest handler ready…',
+      'Video chunker initialized — 10-min segments…',
+      'Queue armed — one message per chunk…',
+      'Parallel EC2 instances provisioning…',
+      'Result aggregator online…',
+      'Rendering flow diagram…',
+    ],
+    loaderInit:  'Initializing…',
+    loaderReady: 'Ready.',
+  },
+  es: {
+    pageTitle:    'Synapti-K AI — Diagrama de Flujo',
+    backLink:     '← Volver al inicio',
+    eyebrow:      'Flujo del Sistema · End-to-End · GPU Paralela',
+    h1:           'Synapti-K AI — <em>Diagrama de Flujo</em>',
+    subtitle:     'El video se divide en segmentos de 10 minutos — cada uno procesado por una EC2 GPU dedicada en paralelo, y luego unificado en un solo reporte OD.',
+    pbTitle:      'Procesamiento Paralelo — por qué importa',
+    pbDesc:       'Un video de 2 horas genera 12 segmentos. Los 12 corren simultáneamente en instancias EC2 GPU dedicadas. El tiempo total se reduce a ~10 minutos en lugar de 2 horas. AWS Batch libera cada instancia en cuanto termina su segmento — cero tiempo inactivo, pagas solo lo que usas.',
+    pbTag:        '12× más rápido en video de 2h',
+    chunkLabel:   'Segmentación de Video — Cómo un video de 30 minutos se distribuye',
+    cnOrigTitle:  'Video Original',
+    cnOrigDesc:   'ej. 30 min',
+    cnChunkTitle: 'Segmentador',
+    cnChunkDesc:  '3 × segmentos de 10 min',
+    cnGPUTitle:   '3 EC2 GPUs en paralelo',
+    cnGPUDesc:    'Todas corriendo simultáneamente',
+    gcAggLabel:   'Agregador',
+    gcAggTime:    'Une todos los resultados',
+    pipeLabel:    'Pipeline de IA por segmento — corre dentro de cada worker EC2 GPU',
+    s1num: 'PASO 01', s1title: 'Ingesta',       s1desc: 'El worker descarga su segmento de 10 min de S3. FFMPEG decodifica los frames. Valida resolución y framerate.',
+    s2num: 'PASO 02', s2title: 'Detección',     s2desc: 'El modelo de visión corre en cada frame. Clasifica moto, carro, camión, bus, bicicleta, peatón.',
+    s3num: 'PASO 03', s3title: 'Seguimiento',   s3desc: 'Asigna un ID único persistente por objeto en el segmento. Elimina dobles conteos.',
+    s4num: 'PASO 04', s4title: 'Mapeo O-D',     s4desc: 'Líneas virtuales de zona asignan cada vehículo rastreado a un par Origen → Destino y ruta.',
+    s5num: 'PASO 05', s5title: 'Salida del Seg.',s5desc: 'Matriz OD parcial, conteos por clase, estadísticas de ruta y logs enviados a S3 para agregación.',
+    lgInput:   'Capa de entrada / cliente',
+    lgChunker: 'Segmentador de video',
+    lgAWS:     'Almacenamiento y cola AWS',
+    lgGPU:     'Workers EC2 GPU en paralelo',
+    lgReport:  'Agregador · reporte · entrega',
+    lgCW:      'Observabilidad CloudWatch — punteado',
+    /* loader */
+    loaderTitle: 'Synapti-K AI · Cargando diagrama',
+    ll: [
+      'Conectando al bucket de entrada…',
+      'Handler de ingesta listo…',
+      'Segmentador inicializado — segmentos de 10 min…',
+      'Cola armada — un mensaje por segmento…',
+      'Instancias EC2 paralelas aprovisionándose…',
+      'Agregador de resultados en línea…',
+      'Renderizando diagrama de flujo…',
+    ],
+    loaderInit:  'Inicializando…',
+    loaderReady: 'Listo.',
+  }
+};
+
+/* ── Language ──────────────────────────────────── */
+function setLang(lang) {
+  document.documentElement.lang = lang;
+  document.title = T[lang].pageTitle;
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = T[lang][el.dataset.i18n] ?? '';
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    el.innerHTML = T[lang][el.dataset.i18nHtml] ?? '';
+  });
+
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
+
+  localStorage.setItem('lang', lang);
+}
+
+document.querySelectorAll('.lang-btn').forEach(btn => {
+  btn.addEventListener('click', () => setLang(btn.dataset.lang));
+});
+
+const initLang = localStorage.getItem('lang') || (navigator.language.startsWith('en') ? 'en' : 'es');
+
+/* ── Loader ────────────────────────────────────── */
+(function () {
+  const bar  = document.getElementById('loader-bar');
+  const stxt = document.getElementById('loader-status-txt');
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+
+  /* Set loader text in the right language immediately */
+  const lk = T[initLang];
+  document.getElementById('loader-title').textContent = lk.loaderTitle;
+  stxt.textContent = lk.loaderInit;
+  for (let i = 0; i < 7; i++) {
+    const el = document.getElementById('ll' + i + 't');
+    if (el) el.textContent = lk.ll[i];
+  }
+
+  function setBar(pct) { if (bar) bar.style.width = pct + '%'; }
+
+  async function runLoader() {
+    for (let i = 0; i < 7; i++) {
+      document.getElementById('ll' + i)?.classList.add('show');
+      stxt.textContent = lk.ll[i];
+      setBar((i + 1) / 7 * 80);
+      await delay(i === 4 ? 280 : 180);
+    }
+  }
+
+  function dismissLoader() {
+    setBar(100);
+    stxt.textContent = lk.loaderReady;
+    setTimeout(() => {
+      document.getElementById('flow-loader').classList.add('done');
+      document.body.classList.add('ready');
+    }, 300);
+  }
+
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    flowchart: { curve: 'basis', padding: 24, nodeSpacing: 55, rankSpacing: 65 },
+    themeVariables: {
+      background:            '#0A0D17',
+      mainBkg:               '#0E1322',
+      nodeBorder:            '#1B2236',
+      clusterBkg:            'rgba(14,19,34,0.55)',
+      clusterBorder:         '#1B2236',
+      lineColor:             '#2D7CFF',
+      edgeLabelBackground:   '#0A0D17',
+      fontFamily:            'Segoe UI, system-ui, sans-serif',
+      fontSize:              '13px',
+      primaryColor:          '#0E1322',
+      primaryTextColor:      '#E9EDF8',
+      primaryBorderColor:    '#1B2236',
+      secondaryColor:        '#0E1322',
+      tertiaryColor:         '#0E1322',
+      labelTextColor:        '#E9EDF8',
+      nodeTextColor:         '#E9EDF8'
+    }
+  });
+
+  Promise.all([
+    runLoader(),
+    mermaid.run({ querySelector: '.mermaid' })
+  ]).then(dismissLoader).catch(dismissLoader);
+})();
+
+/* Apply language after loader sets its own text */
+setLang(initLang);
+</script>
+</body>
+</html>
