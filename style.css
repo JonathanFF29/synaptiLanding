@@ -61,7 +61,7 @@ nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);
 .lang-sep{color:var(--line);font-size:10px;user-select:none}
 
 /* ---------- HERO ---------- */
-header{padding:64px 0 40px}
+header{padding:40px 0 40px}
 .hero{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
 .eyebrow{display:inline-flex;align-items:center;gap:9px;font-family:'JetBrains Mono';font-size:12px;
   letter-spacing:.18em;color:var(--cyan);text-transform:uppercase;
