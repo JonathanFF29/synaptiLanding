@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synapti-K AI</title>
+<meta name="description" content="">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+/* ── Pipeline Boot Overlay ──────────────────────────────── */
+#boot-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #05060A;
+  display: none; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+  transition: opacity .6s ease, transform .6s ease;
+  opacity: 0;
+}
+#boot-overlay.active {
+  display: flex; opacity: 1;
+}
+#boot-overlay.hide {
+  opacity: 0; pointer-events: none; transform: scale(1.04);
+}
+.boot-terminal {
+  width: min(700px, 94vw);
+  border: 1px solid #1B2236; border-radius: 16px;
+  background: rgba(10,13,23,.97);
+  box-shadow: 0 0 80px rgba(45,124,255,.12), 0 0 2px rgba(54,214,255,.2);
+  overflow: hidden;
+}
+.boot-titlebar {
+  background: #0E1322; padding: 12px 20px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid #1B2236;
+}
+.boot-dot { width: 11px; height: 11px; border-radius: 50%; }
+.boot-title {
+  flex: 1; text-align: center;
+  font-size: 11px; letter-spacing: .18em; color: #586079;
+  text-transform: uppercase;
+}
+.boot-body { padding: 28px 32px 20px; }
+.boot-header {
+  color: #36D6FF; font-size: 12px; letter-spacing: .12em;
+  margin-bottom: 4px; line-height: 1.6;
+}
+.boot-sep { color: #1B2236; font-size: 11px; margin-bottom: 20px; }
+.boot-line {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 12px; line-height: 1.9;
+  opacity: 0; transform: translateX(-8px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+.boot-line.show { opacity: 1; transform: none; }
+.boot-badge {
+  min-width: 44px; padding: 1px 7px; border-radius: 5px;
+  font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  text-align: center; border: 1px solid; flex-shrink: 0;
+}
+.b-amber { color: #F59E0B; border-color: rgba(245,158,11,.4); background: rgba(245,158,11,.08); }
+.b-violet { color: #7A3CF0; border-color: rgba(122,60,240,.4); background: rgba(122,60,240,.08); }
+.b-blue  { color: #2D7CFF; border-color: rgba(45,124,255,.4); background: rgba(45,124,255,.08); }
+.b-cyan  { color: #36D6FF; border-color: rgba(54,214,255,.4); background: rgba(54,214,255,.08); }
+.b-green { color: #22C55E; border-color: rgba(34,197,94,.4);  background: rgba(34,197,94,.08); }
+.b-red   { color: #EF4444; border-color: rgba(239,68,68,.4);  background: rgba(239,68,68,.08); }
+.boot-text { color: #8A93AB; flex: 1; }
+.boot-ok { color: #22C55E; font-size: 11px; font-weight: 700; margin-left: auto; white-space: nowrap; }
+.boot-ms { color: #586079; font-size: 10px; width: 44px; text-align: right; flex-shrink: 0; }
+
+.boot-section-label {
+  color: #2D7CFF; font-size: 10px; letter-spacing: .2em;
+  text-transform: uppercase; margin: 16px 0 6px;
+  opacity: 0; transition: opacity .25s ease;
+}
+.boot-section-label.show { opacity: 1; }
+
+.boot-stage {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11px; line-height: 1.9; color: #8A93AB;
+  opacity: 0; transform: translateX(-4px);
+  transition: opacity .2s ease, transform .2s ease;
+}
+.boot-stage.show { opacity: 1; transform: none; }
+.stage-num { color: #586079; width: 24px; flex-shrink: 0; }
+.stage-name { flex: 1; }
+.stage-bar-wrap { width: 120px; height: 5px; background: #1B2236; border-radius: 3px; overflow: hidden; flex-shrink: 0; }
+.stage-bar { height: 100%; border-radius: 3px; width: 0; transition: width .6s cubic-bezier(.4,0,.2,1); }
+.stage-ready { color: #22C55E; font-size: 10px; opacity: 0; transition: opacity .3s ease; white-space: nowrap; }
+.stage-ready.show { opacity: 1; }
+
+.boot-final {
+  margin-top: 20px; padding-top: 16px; border-top: 1px solid #1B2236;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  opacity: 0; transition: opacity .4s ease;
+}
+.boot-final.show { opacity: 1; }
+.boot-status { font-size: 12px; letter-spacing: .1em; }
+.boot-blink { animation: blink .8s step-end infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+.boot-skip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+  color: #586079; background: none; border: 1px solid #1B2236;
+  border-radius: 6px; padding: 5px 14px; cursor: pointer;
+  transition: color .2s, border-color .2s;
+}
+.boot-skip:hover { color: #E9EDF8; border-color: #586079; }
+
+.boot-progress-wrap {
+  height: 3px; background: #1B2236; margin-top: 16px;
+}
+.boot-progress {
+  height: 100%; width: 0; border-radius: 2px;
+  background: linear-gradient(90deg, #36D6FF, #2D7CFF, #7A3CF0);
+  transition: width .4s ease;
+}
+@keyframes bootPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: .5; transform: scale(.85); }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Pipeline Boot Sequence ──────────────────────────── -->
+<div id="boot-overlay">
+  <div class="boot-terminal">
+    <div class="boot-titlebar">
+      <span class="boot-dot" style="background:#EF4444"></span>
+      <span class="boot-dot" style="background:#F59E0B"></span>
+      <span class="boot-dot" style="background:#22C55E"></span>
+      <span class="boot-title">synapti-k-ai · pipeline · init</span>
+    </div>
+    <div class="boot-body">
+      <div class="boot-header">SYNAPTI-K AI — SYSTEM BOOT v1.0</div>
+      <div class="boot-sep">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+
+      <!-- AWS Services -->
+      <div class="boot-line" id="bl-0">
+        <span class="boot-badge b-amber">S3</span>
+        <span class="boot-text">Input bucket connected · 11-nine durability</span>
+        <span class="boot-ok">✓ OK</span>
+        <span class="boot-ms">23ms</span>
+      </div>
+      <div class="boot-line" id="bl-1">
+        <span class="boot-badge b-violet">λ</span>
+        <span class="boot-text">Lambda Ingest Handler online</span>
+        <span class="boot-ok">✓ OK</span>
+        <span class="boot-ms">11ms</span>
+      </div>
+      <div class="boot-line" id="bl-2">
+        <span class="boot-badge b-amber">SQS</span>
+        <span class="boot-text">FIFO Job Queue ready · DLQ armed</span>
+        <span class="boot-ok">✓ OK</span>
+        <span class="boot-ms">8ms</span>
+      </div>
+      <div class="boot-line" id="bl-3">
+        <span class="boot-badge b-blue">BCH</span>
+        <span class="boot-text">AWS Batch Orchestrator up · spot+on-demand</span>
+        <span class="boot-ok">✓ OK</span>
+        <span class="boot-ms">44ms</span>
+      </div>
+      <div class="boot-line" id="bl-4">
+        <span class="boot-badge b-violet">GPU</span>
+        <span class="boot-text">EC2 G4dn · NVIDIA T4 — CUDA online</span>
+        <span class="boot-ok">✓ OK</span>
+        <span class="boot-ms">312ms</span>
+      </div>
+
+      <!-- AI Pipeline stages -->
+      <div class="boot-section-label" id="bl-sec">AI PIPELINE STAGES</div>
+
+      <div class="boot-stage" id="bs-0">
+        <span class="stage-num">01</span>
+        <span class="stage-name">Ingest · FFMPEG decode</span>
+        <div class="stage-bar-wrap"><div class="stage-bar" id="sb-0" style="background:var(--cyan,#36D6FF)"></div></div>
+        <span class="stage-ready" id="sr-0">ready</span>
+      </div>
+      <div class="boot-stage" id="bs-1">
+        <span class="stage-num">02</span>
+        <span class="stage-name">Detection · Computer Vision model</span>
+        <div class="stage-bar-wrap"><div class="stage-bar" id="sb-1" style="background:var(--blue,#2D7CFF)"></div></div>
+        <span class="stage-ready" id="sr-1">ready</span>
+      </div>
+      <div class="boot-stage" id="bs-2">
+        <span class="stage-num">03</span>
+        <span class="stage-name">Tracking · Persistent ID assignment</span>
+        <div class="stage-bar-wrap"><div class="stage-bar" id="sb-2" style="background:#7A3CF0"></div></div>
+        <span class="stage-ready" id="sr-2">ready</span>
+      </div>
+      <div class="boot-stage" id="bs-3">
+        <span class="stage-num">04</span>
+        <span class="stage-name">O-D Mapping · Virtual zone analysis</span>
+        <div class="stage-bar-wrap"><div class="stage-bar" id="sb-3" style="background:var(--green,#22C55E)"></div></div>
+        <span class="stage-ready" id="sr-3">ready</span>
+      </div>
+      <div class="boot-stage" id="bs-4">
+        <span class="stage-num">05</span>
+        <span class="stage-name">Aggregate · OD matrix &amp; report gen</span>
+        <div class="stage-bar-wrap"><div class="stage-bar" id="sb-4" style="background:#F59E0B"></div></div>
+        <span class="stage-ready" id="sr-4">ready</span>
+      </div>
+
+      <!-- Delivery -->
+      <div class="boot-line" id="bl-5" style="margin-top:8px">
+        <span class="boot-badge b-violet">λ</span>
+        <span class="boot-text">Lambda Report Generator armed</span>
+        <span class="boot-ok">✓ OK</span>
+        <span class="boot-ms">7ms</span>
+      </div>
+      <div class="boot-line" id="bl-6">
+        <span class="boot-badge b-cyan">SES</span>
+        <span class="boot-text">Delivery channel open · email + webhook</span>
+        <span class="boot-ok">✓ OK</span>
+        <span class="boot-ms">5ms</span>
+      </div>
+      <div class="boot-line" id="bl-7">
+        <span class="boot-badge b-red">CW</span>
+        <span class="boot-text">CloudWatch monitoring active · alarms set</span>
+        <span class="boot-ok">✓ OK</span>
+        <span class="boot-ms">2ms</span>
+      </div>
+
+      <!-- Final status -->
+      <div class="boot-final" id="boot-final">
+        <span class="boot-status" style="color:#22C55E">
+          ALL SYSTEMS OPERATIONAL — <span class="boot-blink">LOADING FLOW DIAGRAM</span>
+        </span>
+        <button class="boot-skip" id="boot-skip">skip →</button>
+      </div>
+
+      <div class="boot-progress-wrap">
+        <div class="boot-progress" id="boot-progress"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const delay = ms => new Promise(r => setTimeout(r, ms));
+  const show = id => document.getElementById(id)?.classList.add('show');
+  const prog = document.getElementById('boot-progress');
+  let done = false;
+
+  function setProgress(pct) {
+    if (prog) prog.style.width = pct + '%';
+  }
+
+  async function runBoot() {
+    await delay(180);
+
+    /* AWS services */
+    const awsLines = ['bl-0','bl-1','bl-2','bl-3','bl-4'];
+    for (let i = 0; i < awsLines.length; i++) {
+      show(awsLines[i]);
+      setProgress((i + 1) / awsLines.length * 35);
+      await delay(i === 4 ? 380 : 180);
+    }
+
+    /* Pipeline stages */
+    await delay(80);
+    show('bl-sec');
+    await delay(120);
+
+    for (let i = 0; i < 5; i++) {
+      show('bs-' + i);
+      await delay(60);
+      const bar = document.getElementById('sb-' + i);
+      if (bar) { await delay(40); bar.style.width = '100%'; }
+      await delay(420);
+      show('sr-' + i);
+      setProgress(35 + (i + 1) / 5 * 45);
+      await delay(90);
+    }
+
+    /* Delivery */
+    await delay(80);
+    for (let id of ['bl-5','bl-6','bl-7']) {
+      show(id);
+      await delay(160);
+    }
+    setProgress(95);
+
+    await delay(200);
+    show('boot-final');
+    setProgress(100);
+
+    await delay(1800);
+    if (!done) redirect();
+  }
+
+  function redirect() {
+    if (done) return;
+    done = true;
+    window.location.href = 'flow-diagram.html';
+  }
+
+  document.getElementById('boot-skip')?.addEventListener('click', redirect);
+
+  window.startBoot = function () {
+    const overlay = document.getElementById('boot-overlay');
+    overlay.classList.add('active');
+    runBoot();
+  };
+})();
+</script>
+
+<nav>
+  <div class="nav-inner">
+    <a class="brand" href="#top">
+      <span class="brand-mark"><img src="logo.jpg" alt="Synapti-K AI"></span>
+      <span class="brand-name">Synapti<b>-K</b> AI</span>
+    </a>
+    <div class="nav-links">
+      <a href="#empresa" data-i18n="navCompany"></a>
+      <a href="#producto" data-i18n="navProduct"></a>
+      <a href="#como-funciona" data-i18n="navHow"></a>
+      <a href="#casos" data-i18n="navCases"></a>
+      <a class="btn btn-primary" href="#contacto" data-i18n="navCta"></a>
+      <div class="lang-toggle">
+        <button class="lang-btn" data-lang="en">EN</button>
+        <span class="lang-sep">|</span>
+        <button class="lang-btn" data-lang="es">ES</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<header id="top">
+  <div class="wrap">
+    <h1 class="hero-headline" data-i18n-html="heroH1"></h1>
+    <div class="hero">
+      <div class="hero-blocks">
+        <div class="hero-block">
+          <div class="hero-block-label" data-i18n="heroQueLabel"></div>
+          <p class="hero-block-sub" data-i18n="heroQueSub"></p>
+          <p class="hero-block-desc" data-i18n="heroQueBody"></p>
+        </div>
+        <div class="hero-block">
+          <div class="hero-block-label" data-i18n="heroComoLabel"></div>
+          <p class="hero-block-desc" data-i18n="heroComoBody"></p>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="scene">
+          <div class="hud">
+            <span class="rec"><span></span>REC · CAM-01</span>
+            <span class="hud-tag mono" id="hud-clock">00:00:00</span>
+          </div>
+          <video id="hero-vid" src="output_counted_web.mp4" autoplay muted loop playsinline></video>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- EMPRESA -->
+<section id="empresa">
+  <div class="wrap">
+    <div class="about-inner reveal">
+      <div class="about-img">
+        <img src="quienes.jpeg" alt="Synapti-K equipo" />
+      </div>
+      <div class="about-text">
+        <div class="sec-eyebrow" data-i18n="aboutEyebrow"></div>
+        <h2 class="sec-title" data-i18n-html="aboutH2"></h2>
+        <div class="sec-sub about-body" data-i18n-html="aboutSub"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCTO -->
+<section id="producto" class="product">
+  <div class="wrap">
+    <div class="prod-head reveal">
+      <div>
+        <div class="sec-eyebrow" data-i18n="productEyebrow"></div>
+        <h2 class="sec-title" data-i18n-html="productH2"></h2>
+      </div>
+    </div>
+
+    <p class="prod-lead reveal" data-i18n="prodLead"></p>
+
+    <div class="pillars">
+      <div class="pillar reveal">
+        <div class="ic">⚡</div>
+        <h3 data-i18n="pillar1H3"></h3>
+        <p data-i18n="pillar1P"></p>
+      </div>
+      <div class="pillar reveal">
+        <div class="ic">🎯</div>
+        <h3 data-i18n="pillar2H3"></h3>
+        <p data-i18n="pillar2P"></p>
+      </div>
+      <div class="pillar reveal">
+        <div class="ic">🌎</div>
+        <h3 data-i18n="pillar3H3"></h3>
+        <p data-i18n="pillar3P"></p>
+      </div>
+    </div>
+
+    <div class="od-box reveal">
+      <div class="k" data-i18n="odKey"></div>
+      <p data-i18n-html="odP"></p>
+    </div>
+
+    <div class="sub-eyebrow reveal" data-i18n="demoEyebrow"></div>
+
+    <!-- VIDEO + LOG side by side -->
+    <div class="demo-top reveal" id="live-panel">
+      <div class="scene">
+        <div class="hud">
+          <span class="rec"><span></span>REC · CAM-02</span>
+          <span class="hud-tag mono" id="hud-clock2">00:00:00</span>
+        </div>
+        <video class="demo-vid" src="output_Aven_web.mp4" autoplay muted loop playsinline></video>
+      </div>
+
+      <div class="demo-side">
+        <div class="lp-head">
+          <div class="lp-status">
+            <span class="lp-rec"><span></span></span>
+            <span class="lp-lbl" data-i18n="liveLabel"></span>
+          </div>
+          <div class="lp-meta">
+            <span id="lp-frames" class="mono">000000</span>
+            <span class="lp-meta-sep" data-i18n="liveFrames"></span>
+            <span class="lp-meta-sep">·</span>
+            <span id="lp-session" class="mono">00:00:00</span>
+          </div>
+        </div>
+        <div class="lp-log">
+          <div class="lp-log-hd" data-i18n="liveLogHead"></div>
+          <div class="lp-log-feed" id="lp-log-feed"></div>
+        </div>
+        <div class="lp-footer">
+          <div class="lp-stat">
+            <span class="lp-stat-lbl" data-i18n="liveTotal"></span>
+            <span class="lp-stat-val" id="lc-total">0000</span>
+          </div>
+          <div class="lp-stat">
+            <span class="lp-stat-lbl" data-i18n="liveRate"></span>
+            <span class="lp-stat-val" id="lc-rate">0.0 v/s</span>
+          </div>
+          <div class="lp-stat">
+            <span class="lp-stat-lbl" data-i18n="liveAccuracy"></span>
+            <span class="lp-stat-val" id="lc-acc">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLASIFICACIÓN + RUTAS -->
+    <div class="live-panel">
+      <div class="lp-body">
+        <div class="lp-section">
+          <div class="lp-sec-hd" data-i18n="liveClassHead"></div>
+          <div class="lp-rows">
+            <div class="lp-row">
+              <div class="lp-cls-cell">
+                <span class="lp-dot" style="background:var(--cyan)"></span>
+                <span class="lp-cls-name" data-i18n="liveClassMoto"></span>
+              </div>
+              <div class="lp-bar-wrap"><div class="lp-bar" id="bar-moto" style="background:linear-gradient(90deg,var(--cyan),var(--blue))"></div></div>
+              <span class="lp-count mono" id="lc-moto">0000</span>
+            </div>
+            <div class="lp-row">
+              <div class="lp-cls-cell">
+                <span class="lp-dot" style="background:var(--blue)"></span>
+                <span class="lp-cls-name" data-i18n="liveClassCar"></span>
+              </div>
+              <div class="lp-bar-wrap"><div class="lp-bar" id="bar-car" style="background:linear-gradient(90deg,var(--blue),var(--violet))"></div></div>
+              <span class="lp-count mono" id="lc-car">0000</span>
+            </div>
+            <div class="lp-row">
+              <div class="lp-cls-cell">
+                <span class="lp-dot" style="background:var(--violet)"></span>
+                <span class="lp-cls-name" data-i18n="liveClassHeavy"></span>
+              </div>
+              <div class="lp-bar-wrap"><div class="lp-bar" id="bar-heavy" style="background:linear-gradient(90deg,var(--violet),#B07CFE)"></div></div>
+              <span class="lp-count mono" id="lc-heavy">0000</span>
+            </div>
+            <div class="lp-row">
+              <div class="lp-cls-cell">
+                <span class="lp-dot" style="background:#36FF8A"></span>
+                <span class="lp-cls-name" data-i18n="liveClassBike"></span>
+              </div>
+              <div class="lp-bar-wrap"><div class="lp-bar" id="bar-bike" style="background:linear-gradient(90deg,#36FF8A,#1FC46A)"></div></div>
+              <span class="lp-count mono" id="lc-bike">0000</span>
+            </div>
+            <div class="lp-row">
+              <div class="lp-cls-cell">
+                <span class="lp-dot" style="background:#FFB347"></span>
+                <span class="lp-cls-name" data-i18n="liveClassPed"></span>
+              </div>
+              <div class="lp-bar-wrap"><div class="lp-bar" id="bar-ped" style="background:linear-gradient(90deg,#FFB347,#FF8C00)"></div></div>
+              <span class="lp-count mono" id="lc-ped">0000</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="lp-section">
+          <div class="lp-sec-hd" data-i18n="liveRouteHead"></div>
+          <div class="lp-rows">
+            <div class="lp-row lp-row-rt">
+              <span class="lp-rt-tag">N → S</span>
+              <div class="lp-bar-wrap"><div class="lp-bar lp-bar-rt" id="bar-ns"></div></div>
+              <span class="lp-count mono" id="lc-ns">0000</span>
+            </div>
+            <div class="lp-row lp-row-rt">
+              <span class="lp-rt-tag">S → N</span>
+              <div class="lp-bar-wrap"><div class="lp-bar lp-bar-rt" id="bar-sn"></div></div>
+              <span class="lp-count mono" id="lc-sn">0000</span>
+            </div>
+            <div class="lp-row lp-row-rt">
+              <span class="lp-rt-tag">E → W</span>
+              <div class="lp-bar-wrap"><div class="lp-bar lp-bar-rt" id="bar-ew"></div></div>
+              <span class="lp-count mono" id="lc-ew">0000</span>
+            </div>
+            <div class="lp-row lp-row-rt">
+              <span class="lp-rt-tag">W → E</span>
+              <div class="lp-bar-wrap"><div class="lp-bar lp-bar-rt" id="bar-we"></div></div>
+              <span class="lp-count mono" id="lc-we">0000</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sub-eyebrow reveal" data-i18n="capEyebrow"></div>
+    <div class="features">
+      <div class="feat reveal">
+        <div class="k" data-i18n="feat1K"></div>
+        <h3 data-i18n="feat1H3"></h3>
+        <p data-i18n="feat1P"></p>
+        <div class="tags" data-i18n-html="feat1Tags"></div>
+      </div>
+      <div class="feat reveal">
+        <div class="k" data-i18n="feat2K"></div>
+        <h3 data-i18n="feat2H3"></h3>
+        <p data-i18n="feat2P"></p>
+        <div class="tags" data-i18n-html="feat2Tags"></div>
+      </div>
+      <div class="feat reveal">
+        <div class="k" data-i18n="feat3K"></div>
+        <h3 data-i18n="feat3H3"></h3>
+        <p data-i18n="feat3P"></p>
+        <div class="tags" data-i18n-html="feat3Tags"></div>
+      </div>
+      <div class="feat reveal">
+        <div class="k" data-i18n="feat4K"></div>
+        <h3 data-i18n="feat4H3"></h3>
+        <p data-i18n="feat4P"></p>
+        <div class="tags" data-i18n-html="feat4Tags"></div>
+      </div>
+      <div class="feat reveal">
+        <div class="k" data-i18n="feat5K"></div>
+        <h3 data-i18n="feat5H3"></h3>
+        <p data-i18n="feat5P"></p>
+        <div class="tags" data-i18n-html="feat5Tags"></div>
+      </div>
+      <div class="feat reveal">
+        <div class="k" data-i18n="feat6K"></div>
+        <h3 data-i18n="feat6H3"></h3>
+        <p data-i18n="feat6P"></p>
+        <div class="tags" data-i18n-html="feat6Tags"></div>
+      </div>
+    </div>
+
+    <h2 class="sec-title ben-title reveal" data-i18n-html="benEyebrow"></h2>
+    <div class="benefits">
+      <div class="benefit reveal">
+        <div class="bn">01</div>
+        <div>
+          <h3 data-i18n="ben1H3"></h3>
+          <p data-i18n="ben1P"></p>
+        </div>
+      </div>
+      <div class="benefit reveal">
+        <div class="bn">02</div>
+        <div>
+          <h3 data-i18n="ben2H3"></h3>
+          <p data-i18n="ben2P"></p>
+        </div>
+      </div>
+      <div class="benefit reveal">
+        <div class="bn">03</div>
+        <div>
+          <h3 data-i18n="ben3H3"></h3>
+          <p data-i18n="ben3P"></p>
+        </div>
+      </div>
+      <div class="benefit reveal">
+        <div class="bn">04</div>
+        <div>
+          <h3 data-i18n="ben4H3"></h3>
+          <p data-i18n="ben4P"></p>
+        </div>
+      </div>
+      <div class="benefit reveal">
+        <div class="bn">05</div>
+        <div>
+          <h3 data-i18n="ben5H3"></h3>
+          <p data-i18n="ben5P"></p>
+        </div>
+      </div>
+      <div class="benefit reveal">
+        <div class="bn">06</div>
+        <div>
+          <h3 data-i18n="ben6H3"></h3>
+          <p data-i18n="ben6P"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMO FUNCIONA -->
+<section id="como-funciona" class="pipeline">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="sec-eyebrow" data-i18n="pipeEyebrow"></div>
+      <h2 class="sec-title pipe-title" data-i18n-html="pipeH2"></h2>
+    </div>
+    <div class="steps">
+      <div class="step reveal"><div class="n">01</div><div class="bar"></div><h3 data-i18n="step1H3"></h3><p data-i18n="step1P"></p></div>
+      <div class="step reveal"><div class="n">02</div><div class="bar"></div><h3 data-i18n="step2H3"></h3><p data-i18n="step2P"></p></div>
+      <div class="step reveal"><div class="n">03</div><div class="bar"></div><h3 data-i18n="step3H3"></h3><p data-i18n="step3P"></p></div>
+      <div class="step reveal"><div class="n">04</div><div class="bar"></div><h3 data-i18n="step4H3"></h3><p data-i18n="step4P"></p></div>
+      <div class="step reveal"><div class="n">05</div><div class="bar"></div><h3 data-i18n="step5H3"></h3><p data-i18n="step5P"></p></div>
+    </div>
+
+    <div class="reveal" style="text-align:center; margin-top:52px;">
+      <button id="boot-trigger" onclick="startBoot()" style="
+        font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:.18em;
+        text-transform:uppercase; cursor:pointer;
+        background:linear-gradient(105deg,rgba(54,214,255,.07),rgba(122,60,240,.07));
+        border:1px solid rgba(54,214,255,.35); border-radius:12px;
+        color:#36D6FF; padding:18px 40px;
+        display:inline-flex; align-items:center; gap:14px;
+        transition:border-color .2s, box-shadow .2s, transform .15s;
+        box-shadow:0 0 28px rgba(54,214,255,.08);
+      "
+      onmouseover="this.style.borderColor='rgba(54,214,255,.65)';this.style.boxShadow='0 0 40px rgba(54,214,255,.16)';this.style.transform='translateY(-2px)'"
+      onmouseout="this.style.borderColor='rgba(54,214,255,.35)';this.style.boxShadow='0 0 28px rgba(54,214,255,.08)';this.style.transform=''">
+        <span style="font-size:20px; animation:bootPulse 2s infinite;">⚡</span>
+        <span data-i18n="bootBtn"></span>
+      </button>
+    </div>
+  </div>
+</section>
+
+<!-- CLOUD -->
+<section id="infraestructura" class="cloud-arch">
+  <div class="wrap">
+    <div class="prod-head reveal">
+      <div>
+        <div class="sec-eyebrow" data-i18n="cloudEyebrow"></div>
+        <h2 class="sec-title" data-i18n-html="cloudH2"></h2>
+        <p class="sec-sub" data-i18n="cloudSub"></p>
+      </div>
+      <span class="chip" data-i18n="cloudChip"></span>
+    </div>
+    <div class="cloud-services">
+      <div class="cs-card reveal">
+        <div class="cs-ic">S3</div>
+        <div class="cs-tag" data-i18n="cs1Tag"></div>
+        <h3 data-i18n="cs1Name"></h3>
+        <p data-i18n="cs1Desc"></p>
+      </div>
+      <div class="cs-card reveal">
+        <div class="cs-ic">SQS</div>
+        <div class="cs-tag" data-i18n="cs2Tag"></div>
+        <h3 data-i18n="cs2Name"></h3>
+        <p data-i18n="cs2Desc"></p>
+      </div>
+      <div class="cs-card reveal">
+        <div class="cs-ic cs-ic-violet">λ</div>
+        <div class="cs-tag" data-i18n="cs3Tag"></div>
+        <h3 data-i18n="cs3Name"></h3>
+        <p data-i18n="cs3Desc"></p>
+      </div>
+      <div class="cs-card reveal">
+        <div class="cs-ic cs-ic-violet">GPU</div>
+        <div class="cs-tag" data-i18n="cs4Tag"></div>
+        <h3 data-i18n="cs4Name"></h3>
+        <p data-i18n="cs4Desc"></p>
+      </div>
+      <div class="cs-card reveal">
+        <div class="cs-ic">BCH</div>
+        <div class="cs-tag" data-i18n="cs5Tag"></div>
+        <h3 data-i18n="cs5Name"></h3>
+        <p data-i18n="cs5Desc"></p>
+      </div>
+      <div class="cs-card reveal">
+        <div class="cs-ic cs-ic-dim">CW</div>
+        <div class="cs-tag" data-i18n="cs6Tag"></div>
+        <h3 data-i18n="cs6Name"></h3>
+        <p data-i18n="cs6Desc"></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CASOS -->
+<section id="casos" class="usecases">
+  <div class="wrap">
+    <div class="reveal">
+      <div class="sec-eyebrow" data-i18n="casesEyebrow"></div>
+      <h2 class="sec-title" data-i18n-html="casesH2"></h2>
+      <p class="sec-sub" data-i18n="casesSub"></p>
+    </div>
+    <div class="uc-grid">
+      <div class="uc reveal"><div class="uc-tag" data-i18n="uc1Tag"></div><h3 data-i18n="uc1H3"></h3><p data-i18n="uc1P"></p></div>
+      <div class="uc reveal"><div class="uc-tag" data-i18n="uc2Tag"></div><h3 data-i18n="uc2H3"></h3><p data-i18n="uc2P"></p></div>
+      <div class="uc reveal"><div class="uc-tag" data-i18n="uc3Tag"></div><h3 data-i18n="uc3H3"></h3><p data-i18n="uc3P"></p></div>
+      <div class="uc reveal"><div class="uc-tag" data-i18n="uc4Tag"></div><h3 data-i18n="uc4H3"></h3><p data-i18n="uc4P"></p></div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="contacto" class="cta-band">
+  <div class="wrap">
+    <div class="cta-box reveal">
+      <h2 data-i18n-html="ctaH2"></h2>
+      <p data-i18n="ctaP"></p>
+      <div class="cta-row">
+        <a class="btn btn-primary" id="cta-btn1" data-i18n="ctaBtn1"></a>
+        <a class="btn btn-ghost" id="cta-btn2" data-i18n="ctaBtn2"></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <div class="brand">
+      <span class="brand-mark"><img src="logo.jpg" alt="Synapti-K AI"></span>
+      <span class="brand-name">Synapti<b>-K</b> AI</span>
+    </div>
+    <div class="foot-links">
+      <a href="#empresa" data-i18n="footCompany"></a>
+      <a href="#producto" data-i18n="footProduct"></a>
+      <a href="#contacto" data-i18n="footContact"></a>
+    </div>
+    <small data-i18n="footCopy"></small>
+  </div>
+</footer>
+
+<script>
+/* ---------- translations ---------- */
+const T = {
+  en: {
+    title: 'Synapti-K AI — Real-time visual intelligence',
+    metaDesc: 'Synapti-K AI builds computer vision systems that detect, classify and track vehicles and people in video, in real time.',
+    navCompany: 'Company', navProduct: 'Product', navHow: 'How it works', navCases: 'Use cases', navCta: 'Request a demo',
+    eyebrow: 'Computer vision · Real time',
+    heroH1: 'Synapti<b>-K</b> Synapse between the physical world and <em>artificial intelligence</em>.',
+    heroQueLabel: 'What do we do?',
+    heroQueSub: 'We transform mobility into fast, reliable information that improves planning decisions.',
+    heroQueBody: 'Mobility planning demands reliable, timely information. SynaptiK Traffic delivers the data needed to understand how a city moves, support technical studies and accelerate decision-making with greater confidence.',
+    heroComoLabel: 'How do we do it?',
+    heroComoBody: 'We turn any fixed camera into an intelligent traffic station that automatically identifies, classifies and tracks all road agents — light vehicles, heavy vehicles, pedestrians, cyclists and motorcycles — generating detailed information on mobility flows, origin-destination movements and traffic behavior, with no manual counting.',
+    heroCtaPrimary: 'Request a demo →', heroCtaSecondary: 'See the product',
+    counterCar: 'Cars', counterMoto: 'Motorcycles', counterHeavy: 'Trucks · Buses',
+    aboutEyebrow: 'About us',
+    aboutH2: 'We turn information into <em>competitive advantage</em> and build intelligent products.',
+    aboutSub: 'We develop technologies that transform images, video and data into strategic information for decision-making.<br><br>Our approach combines computer vision, advanced analytics and artificial intelligence to help companies and organizations better understand their environment, optimize their operations and deliver reliable results.<br><br>More than software development, we create solutions that turn information into a competitive advantage.',
+    pillar1H3: 'Our own technology', pillar1P: 'Detection and tracking models tuned for real scenes: traffic, public spaces and environments with constant movement.',
+    pillar2H3: 'Focused on useful data', pillar2P: "We don't just deliver boxes on a screen. We deliver counts, directions of flow and metrics ready for decisions.",
+    pillar3H3: 'Built for the region', pillar3P: 'Support in Spanish and English, cloud deployment and a close team that understands the local context.',
+    productEyebrow: 'Our product',
+    productH2: '<em>SYNAPTIK TRAFFIC</em>',
+    productSub: 'AI-Powered Origin-Destination Analysis. The first product from Synapti-K AI.',
+    chip: 'v1 · available',
+    prodLead: 'Transform any fixed camera into a fully automated traffic intelligence station. It uses state-of-the-art computer vision to detect, track and count every vehicle that moves through your intersection or corridor.',
+    demoEyebrow: 'System in action',
+    liveLabel: 'LIVE ANALYSIS', liveFrames: 'FRAMES',
+    liveClassHead: 'VEHICLE CLASSIFICATION',
+    liveClassMoto: 'MOTO', liveClassCar: 'CAR', liveClassHeavy: 'HEAVY', liveClassBike: 'BIKE', liveClassPed: 'PED',
+    liveRouteHead: 'ROUTE ANALYSIS · OD MATRIX',
+    liveTotal: 'TOTAL DETECTED', liveRate: 'THROUGHPUT', liveAccuracy: 'CONFIDENCE',
+    liveLogHead: 'DETECTION LOG',
+    odKey: 'What it does · Origin-Destination Matrix',
+    odP: 'Unlike loop counters or single-line detectors, this system measures <b>where vehicles come from and where they go</b>. Draw any number of virtual lines on the video feed, define origin-destination pairs, and the system automatically counts every motorcycle, car, truck and bus that completes each route — producing a <b>full origin-destination matrix</b> from live or recorded footage, with no manual annotation.',
+    capEyebrow: 'Key capabilities',
+    feat1K: 'Multi-class detection', feat1H3: 'Six classes at once', feat1P: 'Detects and distinguishes motorcycles, cars, trucks, buses, bicycles and pedestrians simultaneously, even in dense traffic.',
+    feat1Tags: '<span class="tag">moto</span><span class="tag">car</span><span class="tag">truck</span><span class="tag">bus</span><span class="tag">bike</span><span class="tag">pedestrian</span>',
+    feat2K: 'Persistent tracking', feat2H3: 'One unique ID per vehicle', feat2P: 'Tracks each vehicle with a persistent ID across the entire scene, eliminating double-counts even through occlusion or momentary disappearance.',
+    feat2Tags: '<span class="tag">tracking</span><span class="tag">no double-count</span>',
+    feat3K: 'Mixed traffic, no errors', feat3H3: 'Riders ≠ pedestrians', feat3P: 'Intelligently separates motorcycle riders from pedestrian counts, so your vehicle totals stay accurate in mixed-traffic environments.',
+    feat3Tags: '<span class="tag">accuracy</span><span class="tag">mixed traffic</span>',
+    feat4K: 'Fixed elevated cameras', feat4H3: 'Optimized for elevated installations', feat4P: 'Designed for fixed cameras mounted on poles, bridges or buildings, with overhead or oblique views of the road. No recalibration or additional hardware required.',
+    feat4Tags: '<span class="tag">overhead</span><span class="tag">oblique</span><span class="tag">pole · bridge</span>',
+    feat5K: 'Report per route', feat5H3: 'Auditable results', feat5P: 'Outputs a structured report per route: total vehicles, breakdown by class and individual track IDs for full auditability.',
+    feat5Tags: '<span class="tag">by class</span><span class="tag">by route</span><span class="tag">IDs</span>',
+    feat6K: 'Live or recorded', feat6H3: 'Flexible inputs and outputs', feat6P: 'Processes video files or live streams and exports results as an annotated video and a plain-text report ready for analysis.',
+    feat6Tags: '<span class="tag">stream</span><span class="tag">annotated video</span><span class="tag">report</span>',
+    benEyebrow: '<em>Benefits</em>',
+    ben1H3: 'Over 97% accuracy', ben1P: 'Detection and classification of vehicles, pedestrians and cyclists with an accuracy rate above 97%, far surpassing traditional manual methods.',
+    ben2H3: 'More reliable studies', ben2P: 'Traffic counts and mobility studies with lower error margins, eliminating the failures and inconsistencies associated with manual counting.',
+    ben3H3: 'Less field personnel', ben3P: 'Significantly reduces the need for field staff and the occupational hazards associated with on-road data collection work.',
+    ben4H3: 'Results in less time', ben4P: 'Reports and results available in considerably shorter timeframes, enabling faster and better-informed decision-making.',
+    ben5H3: 'Multi-class classification', ben5P: 'Classifies and analyzes multiple vehicle types simultaneously — light vehicles, heavy vehicles, motorcycles — plus pedestrians and cyclists.',
+    ben6H3: 'Scalable across sites', ben6P: 'Deploy studies at multiple locations simultaneously, without proportionally increasing operational costs or field teams.',
+    pipeEyebrow: 'How it works',
+    pipeH2: 'From a simple video to an <em>intelligent decision</em>.',
+    step1H3: 'Ingest', step1P: 'We connect your camera, file or video stream.',
+    step2H3: 'Detection', step2P: 'Every frame runs through our vision models.',
+    step3H3: 'Tracking', step3P: 'We assign an identity and follow each object.',
+    step4H3: 'Origin-Destination', step4P: 'We map each vehicle to its route between origin and destination lines.',
+    step5H3: 'Report', step5P: 'We export the OD matrix, annotated video and plain-text report.',
+    cloudEyebrow: 'Cloud infrastructure',
+    cloudH2: 'GPU-accelerated processing. <em>Results in minutes.</em>',
+    cloudSub: 'Every video runs through a fully managed AWS pipeline — parallel inference on dedicated GPU machines, serverless orchestration and automatic report delivery, with no servers to maintain.',
+    cloudChip: 'Powered by AWS',
+    cs1Tag: 'STORAGE', cs1Name: 'Amazon S3', cs1Desc: 'Input footage and processed outputs stored with 11-nine durability. An upload to S3 immediately triggers the entire processing pipeline — no manual steps.',
+    cs2Tag: 'JOB QUEUE', cs2Name: 'Amazon SQS', cs2Desc: 'Decouples video ingest from processing. Handles traffic bursts, retries failed jobs automatically and guarantees no video is ever lost or skipped.',
+    cs3Tag: 'ORCHESTRATION', cs3Name: 'AWS Lambda', cs3Desc: 'Serverless functions coordinate every pipeline stage — from detecting a new upload to spinning up GPU capacity and delivering the final report.',
+    cs4Tag: 'INFERENCE ENGINE', cs4Name: 'EC2 · NVIDIA GPU', cs4Desc: 'Dedicated GPU instances (G4dn · G5) with NVIDIA T4 and A10G cards run the detection models at full resolution. Hours of footage processed in minutes.',
+    cs5Tag: 'BATCH PROCESSING', cs5Name: 'AWS Batch', cs5Desc: 'Provisions and releases GPU capacity automatically per job. Scale to dozens of simultaneous videos with no idle machines and no manual intervention.',
+    cs6Tag: 'OBSERVABILITY', cs6Name: 'Amazon CloudWatch', cs6Desc: 'Every job tracked end-to-end: processing time, queue depth, GPU utilization and error rates — all logged and alerted on in real time.',
+    casesEyebrow: 'Use cases',
+    casesH2: 'Built for those who <em>manage mobility</em>.',
+    casesSub: 'Public and private companies working on mobility development, feasibility studies and traffic management in cities.',
+    uc1Tag: 'TRAFFIC STUDIES', uc1H3: 'Counts & OD matrices', uc1P: 'Traffic studies and vehicle counts with an automatic origin-destination matrix, from video and with no manual counting.',
+    uc2Tag: 'URBAN MOBILITY', uc2H3: 'Capacity & planning', uc2P: "Intersection capacity analysis and mobility planning to improve a city's vehicle flow.",
+    uc3Tag: 'TOLLS & ACCESS', uc3H3: 'Checkpoint monitoring', uc3P: 'Vehicle counting and classification at tolls, parking lots and access points, live or on recordings.',
+    uc4Tag: 'SMART CITIES', uc4H3: 'Data collection', uc4P: 'Reliable traffic data for signal timing, feasibility and road infrastructure projects.',
+    ctaH2: "Got cameras? <em>You've got data.</em>",
+    ctaP: "Tell us your use case and we'll show you the system analyzing your own video in a demo.",
+    ctaBtn1: 'Request a demo →', ctaBtn1Href: 'mailto:hello@synapti-k.ai?subject=Vehicle%20Flow%20Counter%20demo%20request',
+    ctaBtn2: 'hello@synapti-k.ai', ctaBtn2Href: 'mailto:hello@synapti-k.ai',
+    footCompany: 'Company', footProduct: 'Product', footContact: 'Contact',
+    bootBtn: 'Boot pipeline · view full architecture →',
+    footCopy: '© 2026 Synapti-K AI · Visual intelligence',
+  },
+  es: {
+    title: 'Synapti-K AI — Inteligencia visual en tiempo real',
+    metaDesc: 'Synapti-K AI construye sistemas de visión por computador que detectan, clasifican y siguen vehículos y personas en video, en tiempo real.',
+    navCompany: 'Empresa', navProduct: 'Producto', navHow: 'Cómo funciona', navCases: 'Casos de uso', navCta: 'Solicitar demo',
+    eyebrow: 'Visión artificial · Tiempo real',
+    heroH1: 'Synapti<b>-K</b> Sinapsis entre el mundo físico y la <em>inteligencia artificial</em>.',
+    heroQueLabel: '¿Qué hacemos?',
+    heroQueSub: 'Transformamos la movilidad en información rápida y confiable que mejora las decisiones de planificación.',
+    heroQueBody: 'La planificación de la movilidad exige información confiable y oportuna. SynaptiK Traffic entrega los datos necesarios para comprender cómo se mueve una ciudad, respaldar estudios técnicos y acelerar la toma de decisiones con mayor seguridad y confianza.',
+    heroComoLabel: '¿Cómo lo hacemos?',
+    heroComoBody: 'Convertimos cualquier cámara fija en una estación de tráfico inteligente que identifica, clasifica y rastrea automáticamente todos los agentes viales — vehículos livianos, pesados, peatones, bicicletas y motos — generando información detallada sobre los flujos de movilidad, los movimientos origen-destino y el comportamiento del tránsito, sin conteos manuales.',
+    heroCtaPrimary: 'Solicitar una demo →', heroCtaSecondary: 'Ver el producto',
+    counterCar: 'Carros', counterMoto: 'Motos', counterHeavy: 'Camiones · Buses',
+    aboutEyebrow: 'Quiénes somos',
+    aboutH2: 'Convertimos la información en <em>ventaja competitiva</em> y desarrollamos productos inteligentes.',
+    aboutSub: 'Desarrollamos tecnologías que transforman imágenes, videos y datos en información estratégica para la toma de decisiones.<br><br>Nuestro enfoque combina visión por computador, analítica avanzada e inteligencia artificial para ayudar a empresas y entidades a comprender mejor su entorno, optimizar sus operaciones y generar resultados confiables.<br><br>Más que desarrollar software, creamos soluciones que convierten la información en una ventaja competitiva.',
+    pillar1H3: 'Tecnología propia', pillar1P: 'Modelos de detección y seguimiento ajustados a escenas reales: tráfico, espacios públicos y entornos con movimiento constante.',
+    pillar2H3: 'Enfocados en el dato útil', pillar2P: 'No entregamos solo cajas en pantalla. Entregamos conteos, sentidos de circulación y métricas listas para decidir.',
+    pillar3H3: 'Pensado para la región', pillar3P: 'Soporte en español, despliegue en la nube y un equipo cercano que entiende el contexto de Latinoamérica.',
+    productEyebrow: 'Nuestro producto',
+    productH2: '<em>SYNAPTIK TRAFFIC</em>',
+    productSub: 'Análisis Origen-Destino con IA. El primer producto de Synapti-K AI.',
+    chip: 'v1 · disponible',
+    prodLead: 'Convierte cualquier cámara fija en una estación de inteligencia de tráfico totalmente automatizada. Usa visión por computador de última generación para detectar, seguir y contar cada vehículo que pasa por tu intersección o corredor.',
+    demoEyebrow: 'Sistema en acción',
+    liveLabel: 'ANÁLISIS EN VIVO', liveFrames: 'FRAMES',
+    liveClassHead: 'CLASIFICACIÓN VEHICULAR',
+    liveClassMoto: 'MOTO', liveClassCar: 'CARRO', liveClassHeavy: 'PESADO', liveClassBike: 'BICI', liveClassPed: 'PEATÓN',
+    liveRouteHead: 'ANÁLISIS DE RUTAS · MATRIZ OD',
+    liveTotal: 'TOTAL DETECTADO', liveRate: 'TASA', liveAccuracy: 'CONFIANZA',
+    liveLogHead: 'REGISTRO DE DETECCIONES',
+    odKey: 'Qué hace · Matriz Origen-Destino',
+    odP: 'A diferencia de los contadores de lazo o los detectores de una sola línea, este sistema mide <b>de dónde vienen y hacia dónde van</b> los vehículos. Dibuja todas las líneas virtuales que quieras sobre el video, define los pares origen-destino, y el sistema cuenta automáticamente cada moto, carro, camión y bus que completa cada ruta — generando una <b>matriz origen-destino completa</b> a partir de video en vivo o grabado, sin ninguna anotación manual.',
+    capEyebrow: 'Capacidades clave',
+    feat1K: 'Detección multiclase', feat1H3: 'Seis clases a la vez', feat1P: 'Detecta y distingue motos, carros, camiones, buses, bicicletas y peatones de forma simultánea, incluso en tráfico denso.',
+    feat1Tags: '<span class="tag">moto</span><span class="tag">carro</span><span class="tag">camión</span><span class="tag">bus</span><span class="tag">bici</span><span class="tag">peatón</span>',
+    feat2K: 'Seguimiento persistente', feat2H3: 'Un ID único por vehículo', feat2P: 'Sigue cada vehículo con un identificador persistente en toda la escena, eliminando los dobles conteos incluso con oclusiones o desapariciones momentáneas.',
+    feat2Tags: '<span class="tag">tracking</span><span class="tag">sin doble conteo</span>',
+    feat3K: 'Tráfico mixto sin errores', feat3H3: 'Motociclistas ≠ peatones', feat3P: 'Separa de forma inteligente a los motociclistas de los peatones, para que tus totales vehiculares se mantengan precisos en entornos de tráfico mixto.',
+    feat3Tags: '<span class="tag">precisión</span><span class="tag">tráfico mixto</span>',
+    feat4K: 'Cámaras fijas en altura', feat4H3: 'Optimizado para instalaciones elevadas', feat4P: 'Diseñado para cámaras fijas instaladas en postes, puentes o edificios, con vistas cenitales u oblicuas sobre la vía. No requiere recalibración ni hardware adicional.',
+    feat4Tags: '<span class="tag">cenital</span><span class="tag">oblicuo</span><span class="tag">poste · puente</span>',
+    feat5K: 'Reporte por ruta', feat5H3: 'Resultados auditables', feat5P: 'Entrega un reporte estructurado por ruta: total de vehículos, desglose por clase e IDs individuales de cada trayecto para auditoría completa.',
+    feat5Tags: '<span class="tag">por clase</span><span class="tag">por ruta</span><span class="tag">IDs</span>',
+    feat6K: 'Vivo o grabado', feat6H3: 'Entradas y salidas flexibles', feat6P: 'Procesa archivos de video o transmisiones en directo y exporta los resultados como un video anotado y un reporte en texto plano listo para analizar.',
+    feat6Tags: '<span class="tag">stream</span><span class="tag">video anotado</span><span class="tag">reporte</span>',
+    benEyebrow: '<em>Beneficios</em>',
+    ben1H3: 'Precisión superior al 97%', ben1P: 'Detección y clasificación de vehículos, peatones y ciclistas con una tasa de acierto superior al 97%, superando ampliamente los métodos tradicionales de conteo.',
+    ben2H3: 'Mayor confiabilidad en los estudios', ben2P: 'Aforos y estudios de movilidad con menor margen de error, minimizando los fallos e inconsistencias asociados al conteo manual.',
+    ben3H3: 'Reducción de personal en campo', ben3P: 'Disminuye significativamente la necesidad de personal en campo y los riesgos laborales asociados al trabajo de recolección de datos en vía.',
+    ben4H3: 'Resultados en menos tiempo', ben4P: 'Informes y resultados disponibles en tiempos considerablemente más cortos, facilitando una toma de decisiones más rápida y fundamentada.',
+    ben5H3: 'Clasificación multiclase', ben5P: 'Clasifica y analiza múltiples tipos de vehículos de forma simultánea — livianos, pesados, motos — además de peatones y ciclistas.',
+    ben6H3: 'Escalable a múltiples puntos', ben6P: 'Implementación de estudios en varios puntos de manera simultánea, sin incrementar proporcionalmente los costos operativos ni el personal de campo.',
+    pipeEyebrow: 'Cómo funciona',
+    pipeH2: 'De un video simple a una <em>decisión inteligente</em>.',
+    step1H3: 'Ingesta', step1P: 'Conectamos tu cámara, archivo o stream de video.',
+    step2H3: 'Detección', step2P: 'Cada cuadro pasa por nuestros modelos de visión.',
+    step3H3: 'Seguimiento', step3P: 'Asignamos identidad y seguimos cada objeto.',
+    step4H3: 'Origen-Destino', step4P: 'Asociamos cada vehículo a su ruta entre líneas de origen y destino.',
+    step5H3: 'Reporte', step5P: 'Exportamos matriz OD, video anotado y reporte en texto plano.',
+    cloudEyebrow: 'Infraestructura cloud',
+    cloudH2: 'Procesamiento con GPU. <em>Resultados en minutos.</em>',
+    cloudSub: 'Cada video corre a través de un pipeline completamente gestionado en AWS — inferencia paralela en máquinas GPU dedicadas, orquestación serverless y entrega automática del reporte, sin servidores que administrar.',
+    cloudChip: 'Powered by AWS',
+    cs1Tag: 'ALMACENAMIENTO', cs1Name: 'Amazon S3', cs1Desc: 'Videos de entrada y salidas procesadas almacenados con durabilidad de once nueves. Una carga a S3 dispara todo el pipeline automáticamente, sin pasos manuales.',
+    cs2Tag: 'COLA DE MENSAJES', cs2Name: 'Amazon SQS', cs2Desc: 'Desacopla la ingesta del procesamiento. Maneja picos de tráfico, reintenta trabajos fallidos y garantiza que ningún video se pierda.',
+    cs3Tag: 'ORQUESTACIÓN', cs3Name: 'AWS Lambda', cs3Desc: 'Funciones serverless coordinan cada etapa del pipeline — desde detectar una nueva carga hasta aprovisionar la GPU y entregar el reporte final.',
+    cs4Tag: 'MOTOR DE INFERENCIA', cs4Name: 'EC2 · NVIDIA GPU', cs4Desc: 'Instancias GPU dedicadas (G4dn · G5) con tarjetas NVIDIA T4 y A10G ejecutan los modelos en resolución completa. Horas de video procesadas en minutos.',
+    cs5Tag: 'PROCESAMIENTO BATCH', cs5Name: 'AWS Batch', cs5Desc: 'Aprovisiona y libera capacidad GPU automáticamente por trabajo. Escala a docenas de videos simultáneos sin máquinas inactivas ni intervención manual.',
+    cs6Tag: 'OBSERVABILIDAD', cs6Name: 'Amazon CloudWatch', cs6Desc: 'Cada trabajo rastreado de extremo a extremo: tiempo de procesamiento, profundidad de cola, uso de GPU y tasas de error — todo registrado y alertado en tiempo real.',
+    casesEyebrow: 'Casos de uso',
+    casesH2: 'Pensado para quienes <em>gestionan la movilidad</em>.',
+    casesSub: 'Empresas públicas y privadas que trabajan en desarrollo de movilidad, estudios de factibilidad y gestión del tráfico en las ciudades.',
+    uc1Tag: 'ESTUDIOS DE TRÁFICO', uc1H3: 'Conteos y matrices OD', uc1P: 'Estudios de tránsito y conteos vehiculares con matriz origen-destino automática, a partir de video y sin conteo manual.',
+    uc2Tag: 'MOVILIDAD URBANA', uc2H3: 'Capacidad y planeación', uc2P: 'Análisis de capacidad de intersecciones y planeación de movilidad para mejorar el flujo vehicular de la ciudad.',
+    uc3Tag: 'PEAJES Y ACCESOS', uc3H3: 'Monitoreo de puntos de control', uc3P: 'Conteo y clasificación vehicular en peajes, parqueaderos y puntos de acceso, en vivo o sobre grabaciones.',
+    uc4Tag: 'CIUDADES INTELIGENTES', uc4H3: 'Recolección de datos', uc4P: 'Datos confiables de circulación para semaforización, factibilidad y proyectos de infraestructura vial.',
+    ctaH2: '¿Tienes cámaras? <em>Tienes datos.</em>',
+    ctaP: 'Cuéntanos tu caso y te mostramos el sistema analizando tu propio video en una demo.',
+    ctaBtn1: 'Solicitar una demo →', ctaBtn1Href: 'mailto:hola@synapti-k.ai?subject=Quiero%20una%20demo%20del%20Contador%20de%20Flujo%20Vehicular',
+    ctaBtn2: 'hola@synapti-k.ai', ctaBtn2Href: 'mailto:hola@synapti-k.ai',
+    footCompany: 'Empresa', footProduct: 'Producto', footContact: 'Contacto',
+    bootBtn: 'Iniciar pipeline · ver arquitectura completa →',
+    footCopy: '© 2026 Synapti-K AI · Inteligencia visual',
+  }
+};
+
+/* ---------- language switch ---------- */
+function setLang(lang) {
+  document.documentElement.lang = lang;
+  document.title = T[lang].title;
+  document.querySelector('meta[name="description"]').content = T[lang].metaDesc;
+
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = T[lang][el.dataset.i18n] ?? '';
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    el.innerHTML = T[lang][el.dataset.i18nHtml] ?? '';
+  });
+
+  document.getElementById('cta-btn1').href = T[lang].ctaBtn1Href;
+  document.getElementById('cta-btn2').href = T[lang].ctaBtn2Href;
+
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
+
+  localStorage.setItem('lang', lang);
+}
+
+document.querySelectorAll('.lang-btn').forEach(btn => {
+  btn.addEventListener('click', () => setLang(btn.dataset.lang));
+});
+
+const initLang = localStorage.getItem('lang') || (navigator.language.startsWith('en') ? 'en' : 'es');
+setLang(initLang);
+
+/* ---------- scroll reveal ---------- */
+const io = new IntersectionObserver((es) => {
+  es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+}, { threshold: .15 });
+document.querySelectorAll('.reveal').forEach((el, i) => {
+  el.style.transitionDelay = (i % 4 * 60) + 'ms';
+  io.observe(el);
+});
+
+/* ---------- HUD clocks ---------- */
+const clk = document.getElementById('hud-clock');
+const clk2 = document.getElementById('hud-clock2');
+function tick() {
+  const d = new Date();
+  const t = [d.getHours(), d.getMinutes(), d.getSeconds()].map(n => String(n).padStart(2, '0')).join(':');
+  clk.textContent = t;
+  if (clk2) clk2.textContent = t;
+}
+setInterval(tick, 1000); tick();
+
+/* ---------- live analysis panel ---------- */
+(function () {
+  const counts = { moto:0, car:0, heavy:0, bike:0, ped:0, ns:0, sn:0, ew:0, we:0 };
+  let frames = 0, startTime = null, accVal = null, running = false, vehicleId = 0;
+
+  const els = {
+    moto: document.getElementById('lc-moto'),   car: document.getElementById('lc-car'),
+    heavy: document.getElementById('lc-heavy'), bike: document.getElementById('lc-bike'),
+    ped: document.getElementById('lc-ped'),     ns: document.getElementById('lc-ns'),
+    sn: document.getElementById('lc-sn'),       ew: document.getElementById('lc-ew'),
+    we: document.getElementById('lc-we'),        total: document.getElementById('lc-total'),
+    rate: document.getElementById('lc-rate'),    acc: document.getElementById('lc-acc'),
+    frames: document.getElementById('lp-frames'), session: document.getElementById('lp-session'),
+  };
+  const bars = {
+    moto: document.getElementById('bar-moto'), car: document.getElementById('bar-car'),
+    heavy: document.getElementById('bar-heavy'), bike: document.getElementById('bar-bike'),
+    ped: document.getElementById('bar-ped'),     ns: document.getElementById('bar-ns'),
+    sn: document.getElementById('bar-sn'), ew: document.getElementById('bar-ew'),
+    we: document.getElementById('bar-we'),
+  };
+
+  const CLASSES = [{ k:'moto',w:.36 },{ k:'car',w:.28 },{ k:'heavy',w:.12 },{ k:'bike',w:.14 },{ k:'ped',w:.10 }];
+  const ROUTES  = [{ k:'ns',w:.33 },{ k:'sn',w:.26 },{ k:'ew',w:.23 },{ k:'we',w:.18 }];
+  const RT_LABEL = { ns:'N → S', sn:'S → N', ew:'E → W', we:'W → E' };
+  const CLS_COLOR = { moto:'var(--cyan)', car:'var(--blue)', heavy:'var(--violet)', bike:'#36FF8A', ped:'#FFB347' };
+  const CLS_NAME = {
+    en: { moto:'MOTO', car:'CAR', heavy:'HEAVY', bike:'BIKE', ped:'PED' },
+    es: { moto:'MOTO', car:'CARRO', heavy:'PESADO', bike:'BICI', ped:'PEATÓN' },
+  };
+
+  function pick(arr) {
+    let r = Math.random(), a = 0;
+    for (const x of arr) { a += x.w; if (r < a) return x.k; }
+    return arr[arr.length - 1].k;
+  }
+  function fmt(n, p = 4) { return String(n).padStart(p, '0'); }
+  function flash(el) {
+    if (!el) return;
+    el.classList.remove('lp-flash'); void el.offsetWidth; el.classList.add('lp-flash');
+  }
+
+  function addEvent(cls, rt, elapsed) {
+    const feed = document.getElementById('lp-log-feed');
+    if (!feed) return;
+    const lang = document.documentElement.lang === 'en' ? 'en' : 'es';
+    const mm = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+    const ss = String(Math.floor(elapsed % 60)).padStart(2, '0');
+    vehicleId++;
+
+    /* age existing rows */
+    feed.querySelectorAll('.lp-event').forEach((el, i) => {
+      el.className = 'lp-event ' + (i === 0 ? 'lp-event-mid' : 'lp-event-old');
+    });
+
+    const div = document.createElement('div');
+    div.className = 'lp-event lp-event-new';
+    div.innerHTML =
+      `<span class="lp-ev-time">${mm}:${ss}</span>` +
+      `<span class="lp-ev-cls" style="color:${CLS_COLOR[cls]}">${CLS_NAME[lang][cls]}</span>` +
+      `<span class="lp-ev-id">#${fmt(vehicleId)}</span>` +
+      `<span class="lp-ev-route">${RT_LABEL[rt]}</span>`;
+    feed.prepend(div);
+    while (feed.children.length > 5) feed.removeChild(feed.lastChild);
+  }
+
+  function tick() {
+    const elapsed = (Date.now() - startTime) / 1000;
+    frames += 7 + Math.floor(Math.random() * 2);
+    const burst = 0.3 + 0.7 * Math.abs(Math.sin(elapsed * 0.4 + 0.5));
+    const n = Math.random() < 0.65 * burst ? (Math.random() < 0.2 ? 2 : 1) : 0;
+    for (let i = 0; i < n; i++) {
+      const cls = pick(CLASSES), rt = pick(ROUTES);
+      counts[cls]++; counts[rt]++;
+      if (els[cls]) { els[cls].textContent = fmt(counts[cls]); flash(els[cls]); }
+      if (els[rt])  { els[rt].textContent  = fmt(counts[rt]);  flash(els[rt]); }
+      addEvent(cls, rt, elapsed);
+    }
+    const total = counts.moto + counts.car + counts.heavy;
+    const mc = Math.max(counts.moto, counts.car, counts.heavy, 1);
+    const mr = Math.max(counts.ns, counts.sn, counts.ew, counts.we, 1);
+    if (accVal === null && elapsed > 2.5) accVal = (93.5 + Math.random() * 3.8).toFixed(1);
+    if (els.total)   els.total.textContent   = fmt(total);
+    if (els.rate)    els.rate.textContent    = (elapsed > 0 ? total / elapsed : 0).toFixed(1) + ' v/s';
+    if (els.acc)     els.acc.textContent     = accVal != null ? accVal + '%' : '—';
+    if (els.frames)  els.frames.textContent  = fmt(frames, 6);
+    const hh = Math.floor(elapsed / 3600), mm2 = Math.floor((elapsed % 3600) / 60), ss2 = Math.floor(elapsed % 60);
+    if (els.session) els.session.textContent = [hh, mm2, ss2].map(x => String(x).padStart(2, '0')).join(':');
+    ['moto','car','heavy'].forEach(k => { if (bars[k]) bars[k].style.width = (counts[k] / mc * 92) + '%'; });
+    ['ns','sn','ew','we'].forEach(k =>   { if (bars[k]) bars[k].style.width = (counts[k] / mr * 92) + '%'; });
+  }
+
+  const panel = document.getElementById('live-panel');
+  if (panel) {
+    new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && !running) {
+        running = true; startTime = Date.now(); setInterval(tick, 250);
+      }
+    }, { threshold: 0.2 }).observe(panel);
+  }
+})();
+
+/* ---------- hero counters ---------- */
+const TARGETS = { car: 24, moto: 11, heavy: 8 };
+function tickTo(id, target) {
+  const el = document.getElementById(id); if (!el) return;
+  const cur = +el.textContent;
+  if (cur < target) el.textContent = cur + 1;
+}
+setInterval(() => {
+  tickTo('c-car', TARGETS.car);
+  tickTo('c-moto', TARGETS.moto);
+  tickTo('c-heavy', TARGETS.heavy);
+}, 90);
+</script>
+</body>
+</html>
