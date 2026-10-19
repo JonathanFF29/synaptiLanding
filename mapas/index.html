@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mapas de aforo · Synapti-K</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--papel:#F6F7F5;--panel:#fff;--tinta:#1B2530;--tinta2:#5A6660;--borde:#E3E7E2;--acento:#0F6E8C}
+@media (prefers-color-scheme:dark){:root{--papel:#0F151A;--panel:#161E24;--tinta:#E8EDEA;--tinta2:#93A09A;--borde:#232D34;--acento:#4FB3D4}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--papel);color:var(--tinta);font-family:Inter,system-ui,sans-serif;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 16px}
+h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(26px,4vw,38px);margin:0 0 6px;text-align:center}
+p.sub{color:var(--tinta2);margin:0 0 28px;text-align:center;max-width:560px;line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;width:100%;max-width:760px}
+a.card{display:block;text-decoration:none;color:inherit;background:var(--panel);border:1px solid var(--borde);border-radius:14px;
+  padding:22px 24px;transition:transform .15s,border-color .15s,box-shadow .15s}
+a.card:hover{transform:translateY(-2px);border-color:var(--acento);box-shadow:0 10px 30px rgba(0,0,0,.08)}
+a.card h2{font-family:'Space Grotesk',sans-serif;margin:0 0 4px;font-size:22px}
+a.card .z{color:var(--acento);font-weight:500;font-size:14px}
+a.card ul{margin:12px 0 0;padding-left:18px;color:var(--tinta2);font-size:14px;line-height:1.6}
+a.card .ir{margin-top:14px;font-weight:600;color:var(--acento)}
+footer{margin-top:32px;font-size:12px;color:var(--tinta2)}
+</style>
+</head>
+<body>
+<h1>Mapas de aforo vehicular</h1>
+<p class="sub">Conteos por cuarto de hora medidos con visión artificial, sobre las calles reales de Medellín.</p>
+<div class="grid">
+  <a class="card" href="metro8/">
+    <h2>Metro8</h2><div class="z">Belén</div>
+    <ul><li>21 intersecciones</li><li>Día hábil, sábado y auxiliares</li><li>Flujos por acceso y comparación</li></ul>
+    <div class="ir">Abrir mapa →</div>
+  </a>
+  <a class="card" href="caribe/">
+    <h2>Caribe</h2><div class="z">Terminal del Norte</div>
+    <ul><li>8 intersecciones</li><li>Día hábil, sábado, jueves y auxiliares</li><li>Fotos de cada cámara por cuarto de hora</li></ul>
+    <div class="ir">Abrir mapa →</div>
+  </a>
+</div>
+<footer>Synapti-K</footer>
+</body>
+</html>
